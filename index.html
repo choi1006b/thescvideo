@@ -1488,15 +1488,28 @@
       return card;
     }
 
-    // 💡 어제 index1.html의 playVideo 함수 100% 원형 복원 (referrerpolicy 직접 주입)
+// ── 🎬 유튜브 / 인스타그램 릴스 / 틱톡 통합 재생 플레이어 ──
     function playVideo(video) {
+      const url = String(video.url || "").trim();
       const dialog = document.getElementById("playerDialog");
       const wrap = document.getElementById("videoPlayerWrap");
-      document.getElementById("videoTitleDisplay").innerText = "🎬 " + video.title;
-      dialog.className = video.aspect === "vertical" ? "modal-dialog vertical" : "modal-dialog horizontal";
-      wrap.className = video.aspect === "vertical" ? "responsive-video-wrap vertical" : "responsive-video-wrap horizontal";
+      const directBtn = document.getElementById("btnDirectYoutube");
+      document.getElementById("videoTitleDisplay").innerText = "🎬 " + (video.title || "영상 재생");
+
+      const isVertical = (video.aspect === "vertical" || url.includes("shorts") || url.includes("instagram.com") || url.includes("tiktok.com"));
+      dialog.className = isVertical ? "modal-dialog vertical" : "modal-dialog horizontal";
+      wrap.className = isVertical ? "responsive-video-wrap vertical" : "responsive-video-wrap horizontal";
       wrap.innerHTML = "";
-      const yId = extractYouTubeId(video.url);
+
+      if (directBtn) {
+        directBtn.href = url;
+        directBtn.innerText = url.includes("instagram.com") ? "📸 Instagram 원본 열기 ↗" : url.includes("tiktok.com") ? "🎵 TikTok 원본 열기 ↗" : "▶ YouTube 새 탭 열기 ↗";
+        directBtn.style.display = "inline-flex";
+      }
+
+      const yId = extractYouTubeId(url);
+
+      // (A) 유튜브 영상
       if (yId) {
         const iframe = document.createElement("iframe");
         iframe.src = `https://www.youtube.com/embed/${yId}?autoplay=1&mute=0&playsinline=1&rel=0`;
@@ -1504,11 +1517,50 @@
         iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
         iframe.setAttribute("allowfullscreen", "true");
         wrap.appendChild(iframe);
-      } else {
+      } 
+      // (B) 인스타그램 릴스 전용 공식 임베드 뷰어
+      else if (url.includes("instagram.com")) {
+        const igMatch = url.match(/instagram\.com\/(?:reel|reels|p)\/([a-zA-Z0-9_-]+)/);
+        if (igMatch && igMatch[1]) {
+          const iframe = document.createElement("iframe");
+          iframe.src = `https://www.instagram.com/reel/${igMatch[1]}/embed/captioned/`;
+          iframe.setAttribute("allowtransparency", "true");
+          iframe.setAttribute("allowfullscreen", "true");
+          iframe.setAttribute("frameborder", "0");
+          iframe.style.width = "100%";
+          iframe.style.height = "100%";
+          iframe.style.minHeight = "480px";
+          wrap.appendChild(iframe);
+        } else {
+          window.open(url, "_blank");
+          return;
+        }
+      } 
+      // (C) 틱톡 공식 임베드 플레이어
+      else if (url.includes("tiktok.com")) {
+        const tkMatch = url.match(/\/video\/(\d+)/);
+        if (tkMatch && tkMatch[1]) {
+          const iframe = document.createElement("iframe");
+          iframe.src = `https://www.tiktok.com/embed/v2/${tkMatch[1]}`;
+          iframe.setAttribute("allow", "encrypted-media;");
+          iframe.setAttribute("allowfullscreen", "true");
+          iframe.setAttribute("frameborder", "0");
+          iframe.style.width = "100%";
+          iframe.style.height = "100%";
+          iframe.style.minHeight = "480px";
+          wrap.appendChild(iframe);
+        } else {
+          window.open(url, "_blank");
+          return;
+        }
+      } 
+      // (D) 기타 직접 비디오 링크
+      else {
         const vid = document.createElement("video");
-        vid.src = video.url; vid.controls = true; vid.autoplay = true;
+        vid.src = url; vid.controls = true; vid.autoplay = true;
         wrap.appendChild(vid);
       }
+
       document.getElementById("videoModal").classList.add("active");
     }
 
@@ -1517,7 +1569,7 @@
       document.getElementById("videoModal").classList.remove("active");
     }
 
-    // ── 🔥 실시간 트렌드 피드 ──
+    // ── 🔥 실시간 트렌드 피드 (시트 연동) ──
     window.onCrawledTrendGviz = function(res) {
       gData.crawledTrends = [];
       if (res && res.table && res.table.rows && res.table.rows.length > 0) {
@@ -1531,7 +1583,7 @@
             fmt = col0; title = cellVal(r.c[1]); channel = cellVal(r.c[2]); url = cellVal(r.c[3]); thumb = cellVal(r.c[4]); target = cellVal(r.c[5]);
           } else {
             title = col0; channel = cellVal(r.c[1]); url = cellVal(r.c[2]); thumb = cellVal(r.c[3]); target = cellVal(r.c[4]);
-            fmt = (String(title).includes("쇼츠") || String(title).includes("릴스")) ? "숏폼" : "롱폼";
+            fmt = (String(title).includes("쇼츠") || String(title).includes("릴스") || String(url).includes("tiktok")) ? "숏폼" : "롱폼";
           }
           if (title && url) gData.crawledTrends.push({ format: fmt, title, channel, url, thumb, target });
         });
@@ -1547,6 +1599,7 @@
       renderCrawledTrendGrid();
     }
 
+    // ── 🔥 실시간 트렌드 카드 렌더링 (인스타/틱톡 썸네일 403 차단 방어) ──
     function renderCrawledTrendGrid() {
       const grid = document.getElementById("crawledTrendGrid");
       if (!grid) return;
@@ -1556,38 +1609,51 @@
       if (activeTrendFormat !== "all") items = items.filter(it => it.format === activeTrendFormat);
 
       if (items.length === 0) {
-        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px 20px; background:var(--sc-surface); border:1px dashed var(--border-subtle); border-radius:12px;"><strong style="color:#fff;">실시간 트렌드 데이터가 없습니다.</strong></div>';
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px 20px; background:var(--sc-surface); border:1px dashed var(--border-subtle); border-radius:12px;"><strong style="color:#fff;">수집된 트렌드 데이터가 없습니다. PC에서 trendcrawler.py를 실행해 주세요.</strong></div>';
         return;
       }
 
-      items.forEach((item, idx) => {
-        const yId = extractYouTubeId(item.url);
-        const thumbUrl = item.thumb || (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600");
-        const isShort = (item.format === "숏폼");
+      const FALLBACK_INSTA = "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=600&q=80";
+      const FALLBACK_TIKTOK = "https://images.unsplash.com/photo-1512290900672-8a9d1563f68a?w=600&q=80";
+      const FALLBACK_YT = "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&q=80";
+
+      items.forEach((item) => {
+        const url = String(item.url || "").trim();
+        const yId = extractYouTubeId(url);
+        
+        let platformFallback = FALLBACK_YT;
+        let isShort = (item.format === "숏폼" || url.includes("shorts") || url.includes("instagram.com") || url.includes("tiktok.com"));
+
+        if (url.includes("instagram.com") || String(item.channel).includes("Instagram")) {
+          platformFallback = FALLBACK_INSTA;
+        } else if (url.includes("tiktok.com") || String(item.channel).includes("TikTok")) {
+          platformFallback = FALLBACK_TIKTOK;
+        }
+
+        let thumbUrl = (item.thumb && String(item.thumb).startsWith("http")) ? item.thumb : (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : platformFallback);
         const safeTitle = String(item.title).replace(/['"]/g, "");
 
         grid.innerHTML += `
           <div class="crawled-card">
-            <div class="crawled-thumb-box" onclick="playVideo({ title: '${safeTitle}', url: '${item.url}', aspect: '${isShort ? 'vertical' : 'horizontal'}' })">
-              <img src="${thumbUrl}" class="card-thumb-img" alt="${safeTitle}">
+            <div class="crawled-thumb-box" onclick="playVideo({ title: '${safeTitle}', url: '${url}', aspect: '${isShort ? 'vertical' : 'horizontal'}' })">
+              <img src="${thumbUrl}" class="card-thumb-img" alt="${safeTitle}" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='${platformFallback}';">
               <div class="play-floating-btn">▶</div>
             </div>
             <div class="crawled-info">
               <div class="crawled-meta">
-                <span style="color:var(--sc-cyan); font-weight:700;">📺 ${item.channel}</span>
+                <span style="color:var(--sc-cyan); font-weight:700;">${item.channel}</span>
                 <span style="color:#FBBF24;">🏷️ ${item.target}</span>
               </div>
               <div class="crawled-title">${item.title}</div>
               <button class="btn-action pri" style="margin-top:auto; width:100%; justify-content:center; padding:8px;" 
-                onclick="applyCrawledRefToAiPlanner('${safeTitle}', '${item.target}', '${item.url}', '${isShort ? 'shortform' : 'longform'}')">
-                ✨ 이 레퍼런스로 AI 기획 생성
+                onclick="applyCrawledRefToAiPlanner('${safeTitle}', '${item.target}', '${url}', '${isShort ? 'shortform' : 'longform'}')">
+                ✨ 이 레퍼런스로 AI 콘티 생성
               </button>
             </div>
           </div>
         `;
       });
     }
-
     function applyCrawledRefToAiPlanner(title, target, url, fmt) {
       switchTab('aiplanner');
       document.getElementById("aiVideoFormat").value = fmt;

@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SC OS">
+<link rel="apple-touch-icon" href="https://img.icons8.com/color/192/480/video-production.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>The SC // Production OS</title>
@@ -195,15 +201,81 @@
     .event-chip.outsource { background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(245, 158, 11, 0.5); color: #FCD34D; font-weight: 700; }
     .event-chip.ceo { background: rgba(236, 72, 153, 0.25); border: 1px solid rgba(236, 72, 153, 0.5); color: #F472B6; font-weight: 700; }
 
+   /* 📱 모바일 전용 레이아웃 및 정렬 최적화 */
     @media (max-width: 768px) {
-      body { padding: 10px 12px 60px; }
-      .calendar-container { padding: 8px; }
-      .weekdays-grid, .days-grid { gap: 2px; }
-      .weekday-label { font-size: 10px; padding: 4px 0; }
-      .day-card { min-height: 58px; padding: 3px 2px; border-radius: 6px; }
-      .day-number { font-size: 10px; }
-      .traffic-dot { font-size: 8px; padding: 0 3px; }
-      .event-chip { font-size: 9px; padding: 2px 2px; margin-top: 1px; }
+      body { padding: 10px 10px 70px; }
+
+      /* 1. 상단 헤더 모바일 정렬 */
+      header {
+        padding: 12px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .brand-section { width: 100%; justify-content: space-between; }
+      .header-ai-trend { width: 100%; max-width: 100%; min-width: 0; }
+      .header-actions {
+        width: 100%;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .header-actions .btn-action { flex-shrink: 0; }
+
+      /* 2. 네비게이션 탭 메뉴 가로 스크롤 고정 */
+      .nav-tabs {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        width: 100%;
+        padding: 6px;
+        gap: 6px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .tab-item { white-space: nowrap; flex-shrink: 0; }
+
+      /* 3. 신청내역 및 현황판 카드 그리드 1열 고정 */
+      .tickets-grid, .stats-cards-grid, .crawled-trend-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      /* 4. ✨ AI 기획 콘티 테이블 ➔ 모바일 카드형 뷰 자동 전환 */
+      .storyboard-table-wrap {
+        width: 100%;
+        overflow-x: visible;
+      }
+      .storyboard-table, 
+      .storyboard-table thead, 
+      .storyboard-table tbody, 
+      .storyboard-table tr, 
+      .storyboard-table td {
+        display: block;
+        width: 100% !important;
+      }
+      .storyboard-table thead { display: none; } /* 모바일에서는 헤더 제거 */
+      .storyboard-table tr {
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        padding: 12px;
+      }
+      .storyboard-table td {
+        padding: 4px 0 !important;
+        border-bottom: none !important;
+      }
+      .dialogue-box {
+        margin-top: 6px;
+        font-size: 12px;
+      }
+
+      /* 5. 팝업 모달 화면 넘침 방지 */
+      .modal-dialog {
+        padding: 16px;
+        max-height: 88vh;
+        overflow-y: auto;
+      }
     }
 
     /* ── 현황판 ── */
@@ -683,35 +755,54 @@
     </div>
   </div>
 
-  <!-- ── 팝업 모달 4: ✏️ 의뢰 일정/장소 변경 모달 ── -->
+ <!-- ── 팝업 모달 4: ✏️ 의뢰 일정/장소 및 기획안 파일 수정 모달 ── -->
   <div class="modal-backdrop" id="editModal">
-    <div class="modal-dialog" style="max-width:440px;">
+    <div class="modal-dialog" style="max-width:460px;">
       <div class="modal-top-bar">
-        <div class="modal-title">✏️ 의뢰 일정 및 장소 변경</div>
+        <div class="modal-title">✏️ 의뢰 내용 및 기획안 파일 수정</div>
         <button class="modal-close-btn" onclick="closeEditModal()">✕</button>
       </div>
-      <div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
-        일정이나 장소를 수정하면 영상팀 인박스에 **[재검토]** 상태로 즉시 알림이 전송됩니다.
-      </div>
+
       <input type="hidden" id="editRowNumber">
+      
       <div style="margin-bottom:10px;">
         <label style="font-size:11px; color:var(--text-muted);">프로젝트 명칭</label>
         <input type="text" id="editProjectTitle" class="form-control" readonly style="opacity:0.6;">
       </div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px; color:var(--text-muted);">변경할 촬영 희망일자</label>
+        <label style="font-size:11px; color:var(--text-muted);">촬영 희망일자</label>
         <input type="text" id="editNewDate" class="form-control" placeholder="예: 2026. 10. 28">
       </div>
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px; color:var(--text-muted);">변경할 촬영 시간대</label>
+        <label style="font-size:11px; color:var(--text-muted);">촬영 시간대</label>
         <input type="text" id="editNewTime" class="form-control" placeholder="예: 오후 2:00">
       </div>
-      <div style="margin-bottom:16px;">
-        <label style="font-size:11px; color:var(--text-muted);">변경할 촬영 장소</label>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px; color:var(--text-muted);">촬영 장소</label>
         <input type="text" id="editNewPlace" class="form-control" placeholder="예: 파르나스 서울 3층">
       </div>
-      <button class="btn-action pri" style="width:100%; justify-content:center; padding:10px;" onclick="submitEditRequest()">
-        💾 변경 내용 시트 반영 및 재검토 요청
+
+      <!-- 💡 주의사항 및 사후 파일 추가 안내 박스 -->
+      <div style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.35); border-radius:8px; padding:12px; margin-bottom:14px;">
+        <div style="font-size:12px; color:#FBBF24; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
+          ⚠️ 기획안 파일 업로드 시 필독 주의사항
+        </div>
+        <div style="font-size:11.5px; color:#FDE68A; line-height:1.5; margin-bottom:8px;">
+          • 새 의뢰서를 다시 작성하시면 <strong>신규 건이 중복 생성</strong>됩니다.<br>
+          • 파일 추가는 신청 시 수신한 <strong>접수 확인 이메일 본문 맨 아래의 [응답 수정]</strong> 버튼을 눌러 파일을 첨부해 주세요.<br>
+          • 이메일에서 파일을 제출하시면 본 화면의 상태가 즉시 <strong>[📁 파일 보기 ↗]</strong>로 바뀝니다.
+        </div>
+        <div id="editCurrentFileStatus" style="font-size:11.5px; padding-top:6px; border-top:1px dashed rgba(245, 158, 11, 0.25);"></div>
+      </div>
+
+      <!-- 보조 입력: 구글 드라이브/노션 링크 직접 입력 -->
+      <div style="margin-bottom:16px;">
+        <label style="font-size:11px; color:var(--text-muted);">또는 구글 드라이브 / 노션 링크 직접 입력</label>
+        <input type="text" id="editFileUrl" class="form-control" placeholder="https://drive.google.com/...">
+      </div>
+
+      <button class="btn-action pri" id="btnSubmitEdit" style="width:100%; justify-content:center; padding:10px;" onclick="submitEditRequest()">
+        💾 일정/장소/링크 시트 반영
       </button>
     </div>
   </div>
@@ -1068,14 +1159,30 @@
       sendWebhook({ action: "rejectRequest", row: r.row, project: r.project, reason: reason }, "⛔ 해당 의뢰가 반려되었습니다.");
     }
 
-    function openEditModal(idx) {
+ function openEditModal(idx) {
       const r = gData.requests[idx];
       if (!r) return;
-      document.getElementById("editRowNumber").value = r.row;
-      document.getElementById("editProjectTitle").value = `[${r.dept}] ${r.project}`;
-      document.getElementById("editNewDate").value = r.shootDate;
-      document.getElementById("editNewTime").value = r.timeSlot;
-      document.getElementById("editNewPlace").value = r.shootPlace;
+      document.getElementById("editRowNumber").value = r.row; 
+      document.getElementById("editProjectTitle").value = r.project || "";
+      document.getElementById("editNewDate").value = (r.shootDate && r.shootDate !== "-") ? r.shootDate : "";
+      document.getElementById("editNewTime").value = (r.timeSlot && r.timeSlot !== "-") ? r.timeSlot : "";
+      document.getElementById("editNewPlace").value = (r.shootPlace && r.shootPlace !== "-") ? r.shootPlace : "";
+
+      const curFileBox = document.getElementById("editCurrentFileStatus");
+      const fVal = String(r.fileUpload || "").trim();
+      if (curFileBox) {
+        if (fVal.includes("http://") || fVal.includes("https://")) {
+          const m = fVal.match(/(https?:\/\/[^\s,]+)/);
+          const u = m ? m[1] : fVal;
+          curFileBox.innerHTML = `현재 등록된 파일: <a href="${u}" target="_blank" style="color:#38BDF8; font-weight:700; text-decoration:underline;">📁 파일 보기 ↗</a>`;
+        } else {
+          curFileBox.innerHTML = `<span style="color:var(--text-muted);">현재 등록된 기획안 파일이 없습니다.</span>`;
+        }
+      }
+
+      const fileInput = document.getElementById("editFileUrl");
+      if (fileInput) fileInput.value = (fVal.includes("http")) ? fVal : "";
+
       document.getElementById("editModal").classList.add("active");
     }
 
@@ -1088,21 +1195,29 @@
       const newDate = document.getElementById("editNewDate").value.trim();
       const newTime = document.getElementById("editNewTime").value.trim();
       const newPlace = document.getElementById("editNewPlace").value.trim();
-
-      if (!newDate) { alert("촬영 희망일자를 입력하세요!"); return; }
+      const fileUrl = document.getElementById("editFileUrl") ? document.getElementById("editFileUrl").value.trim() : "";
 
       closeEditModal();
-      sendWebhook({ action: "editRequest", row: row, newDate: newDate, newTime: newTime, newPlace: newPlace }, "✅ 일정이 수정되어 재검토 요청되었습니다!");
+
+      sendWebhook({
+        action: "editRequest",
+        row: row,
+        newDate: newDate,
+        newTime: newTime,
+        newPlace: newPlace,
+        fileUrl: fileUrl
+      }, "✅ 변경 내용이 시트에 반영되었습니다!");
     }
 
     function sendWebhook(payload, successAlert) {
-      document.getElementById("clock").innerText = "시트 동기화 중...";
+      document.getElementById("clock").innerText = "시트 반영 중...";
+      
       fetch(WEB_APP_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
-      });
+      }).catch(err => console.log("웹훅 전송 에러:", err));
 
       const params = new URLSearchParams();
       for (const k in payload) params.append(k, payload[k]);
@@ -1115,7 +1230,6 @@
       setTimeout(loadAllSheets, 2200);
     }
 
-    // 💡 신청내역 증발 버그 수정 완료 (삼항 연산자 괄호 처리)
     function renderTickets() {
       const grid = document.getElementById("reqTicketsGrid");
       if (!grid) return;
@@ -1130,7 +1244,17 @@
         let deptClass = "";
         if (r.dept.includes("외주")) deptClass = " outsource";
         else if (r.dept.includes("대표")) deptClass = " ceo";
-        const hasFile = (r.fileUpload && r.fileUpload !== "-" && r.fileUpload !== "없음") ? "📁 있음" : "없음";
+
+        // 파일 열에 링크(http)가 있으면 [📁 파일 보기 ↗], 없으면 [없음] 및 수정 버튼
+        let fileDisplayHtml = '<span style="color:var(--text-muted);">없음</span>';
+        const fVal = String(r.fileUpload || "").trim();
+        if (fVal.includes("http://") || fVal.includes("https://")) {
+          const urlMatch = fVal.match(/(https?:\/\/[^\s,]+)/);
+          const targetUrl = urlMatch ? urlMatch[1] : fVal;
+          fileDisplayHtml = `<a href="${targetUrl}" target="_blank" style="color:var(--sc-cyan); text-decoration:underline; font-weight:700; display:inline-flex; align-items:center; gap:4px;">📁 파일 보기 ↗</a>`;
+        } else {
+          fileDisplayHtml = `<span style="color:var(--text-muted); font-size:12px;">없음</span> <button class="btn-action sec" style="padding:1px 6px; font-size:10.5px; margin-left:6px;" onclick="openEditModal(${idx})">✏️ 파일 추가 안내</button>`;
+        }
 
         grid.innerHTML += `
           <div class="ticket-card" id="req-card-${idx}">
@@ -1145,19 +1269,18 @@
               <div class="ticket-field"><span class="ticket-field-label">📍 촬영 장소</span><span class="ticket-field-val">${r.shootPlace}</span></div>
               <div class="ticket-field"><span class="ticket-field-label">🎯 희망 마감</span><span class="ticket-field-val" style="color:#FBBF24;">${r.deadLine}</span></div>
               <div class="ticket-field"><span class="ticket-field-label">⏱️ 예상 완료</span><span class="ticket-field-val" style="color:var(--accent-green);">${r.teamFinish}</span></div>
-              <div class="ticket-field"><span class="ticket-field-label">📁 파일 유무</span><span class="ticket-field-val">${hasFile}</span></div>
+              <div class="ticket-field"><span class="ticket-field-label">📁 기획안 파일</span><span class="ticket-field-val">${fileDisplayHtml}</span></div>
               <div class="ticket-field" style="border-top:1px solid rgba(255,255,255,0.06); padding-top:4px; margin-top:4px;">
                 <span class="ticket-field-label">⏱️ 접수 일시</span><span class="ticket-field-val" style="font-family:'JetBrains Mono'; font-size:11px;">${r.timestamp}</span>
               </div>
             </div>
             <button class="btn-action sec" style="width:100%; justify-content:center; margin-top:4px; font-size:11px;" onclick="openEditModal(${idx})">
-              ✏️ 일정/장소 변경 요청
+              ✏️ 일정/장소 변경 및 기획안 업로드
             </button>
           </div>
         `;
       });
     }
-
     function renderCalendar() {
       const grid = document.getElementById("calDaysGrid");
       if (!grid) return;
@@ -1651,7 +1774,7 @@
       trendRollingTimer = setInterval(nextTrendTopic, 5000);
     }
 
-    // 어제 파일(index1.html)의 5씬 정밀 콘티 생성 엔진 100% 복원
+    // [1] 콘티 생성 및 모바일 결과창 자동 스크롤
     async function generateAiScript() {
       const format = document.getElementById("aiVideoFormat").value;
       const topic = document.getElementById("aiTopic").value.trim();
@@ -1673,6 +1796,12 @@
           <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">요청자의 핵심 포인트와 기획 의도에 맞춰 씬별 콘티를 작성하고 있습니다.</div>
         </div>
       `;
+
+      // 💡 모바일 화면(폭 900px 이하)에서는 생성 즉시 결과창으로 화면을 부드럽게 내려줍니다.
+      const resultCard = document.getElementById("aiResultCard");
+      if (resultCard && window.innerWidth <= 900) {
+        resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
 
       const systemPrompt = `당신은 15년 차 총괄 영상 기획 크리에이티브 디렉터(CD)입니다. 다음 의뢰를 분석하여 씬별 연출 콘티 및 대본을 JSON 형식으로만 작성하세요:
 - 포맷: ${format}
@@ -1697,21 +1826,7 @@
 }`;
 
       let parsedResult = null;
-      let candidateModels = [];
-      try {
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(GEMINI_API_KEY)}`);
-        if (listRes.ok) {
-          const listData = await listRes.json();
-          if (listData.models) {
-            candidateModels = listData.models
-              .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent"))
-              .map(m => m.name.replace("models/", ""))
-              .filter(name => name.includes("flash") || name.includes("gemini"));
-          }
-        }
-      } catch (e) {}
-
-      if (candidateModels.length === 0) candidateModels = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
+      let candidateModels = ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash"];
 
       for (let i = 0; i < candidateModels.length; i++) {
         try {
@@ -1738,6 +1853,7 @@
       renderAiOutput(topic, target, parsedResult);
     }
 
+    // [2] 백업용 다이내믹 콘티 생성기
     function buildPureDynamicScript(format, topic, target, usp, tone) {
       let cleanTopic = topic.replace(/\?$/g, "").trim();
       const uspLines = usp.split("\n").map(l => l.trim()).filter(Boolean);
@@ -1760,6 +1876,7 @@
       };
     }
 
+    // [3] 모바일 래퍼가 적용된 씬 렌더링 함수
     function renderAiOutput(topic, target, content) {
       const body = document.getElementById("aiScriptBody");
       document.getElementById("aiResultTitle").innerText = `📋 [${topic}] 영상 기획 콘티`;
@@ -1768,36 +1885,38 @@
       content.scenes.forEach(s => {
         rowsHtml += `
           <tr>
-            <td style="width:110px;">
+            <td>
               <span class="scene-badge">${s.num}</span>
-              <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">${s.time}</div>
+              <span style="font-size:11px; color:var(--text-muted); margin-left:6px;">${s.time}</span>
             </td>
             <td>
-              <div style="font-weight:600; color:var(--text-primary); line-height:1.55;">${s.video}</div>
-              <div style="font-size:11px; color:var(--sc-cyan); margin-top:6px;">💡 PD 연출 팁: ${s.tip || '템포감 있는 컷 편집'}</div>
+              <div style="font-weight:600; color:var(--text-primary); line-height:1.5; margin-top:4px;">${s.video}</div>
+              <div style="font-size:11px; color:var(--sc-cyan); margin-top:4px;">💡 PD 연출: ${s.tip || '템포감 있는 컷 편집'}</div>
             </td>
-            <td style="width:260px;">
+            <td>
               <div class="dialogue-box">🗣️ ${s.audio}</div>
-              <div style="font-size:12px; font-weight:700; color:#FBBF24; margin-top:8px;">자막: ${s.sub}</div>
+              <div style="font-size:12px; font-weight:700; color:#FBBF24; margin-top:6px;">자막: ${s.sub}</div>
             </td>
           </tr>
         `;
       });
 
       body.innerHTML = `
-        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:8px; padding:14px; margin-bottom:16px; font-size:12px;">
-          <div style="font-size:13px; color:#38BDF8; margin-bottom:8px; font-weight:700;">🎯 기획 방향: ${content.projectSummary}</div>
-          <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div style="background:rgba(0,0,0,0.25); border:1px solid var(--border-subtle); border-radius:8px; padding:12px; margin-bottom:14px; font-size:12px;">
+          <div style="font-size:13px; color:#38BDF8; margin-bottom:6px; font-weight:700;">🎯 기획 방향: ${content.projectSummary}</div>
+          <div style="display:flex; gap:16px; flex-wrap:wrap;">
             <div><span style="color:var(--text-muted);">예상 분량:</span> <strong style="color:var(--sc-cyan);">${content.runTime}</strong></div>
             <div><span style="color:var(--text-muted);">추천 BGM:</span> <strong>${content.bgm}</strong></div>
           </div>
         </div>
-        <table class="storyboard-table">
-          <thead>
-            <tr><th>씬 / 초수</th><th>화면 연출 & 카메라 앵글</th><th>나레이션 / 대사 & 화면 자막</th></tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
+        <div class="storyboard-table-wrap">
+          <table class="storyboard-table">
+            <thead>
+              <tr><th>씬 / 초수</th><th>화면 연출 & 카메라 앵글</th><th>나레이션 / 대사 & 화면 자막</th></tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
       `;
 
       lastGeneratedScript = `[The SC 영상 기획 콘티] ${topic}\n타겟: ${target}\n분량: ${content.runTime}\nBGM: ${content.bgm}\n\n` + 

@@ -1489,28 +1489,28 @@
     }
 
 // ── 🎬 유튜브 / 인스타그램 릴스 / 틱톡 통합 재생 플레이어 ──
-    function playVideo(video) {
+  function playVideo(video) {
       const url = String(video.url || "").trim();
       const dialog = document.getElementById("playerDialog");
       const wrap = document.getElementById("videoPlayerWrap");
       const directBtn = document.getElementById("btnDirectYoutube");
+      
       document.getElementById("videoTitleDisplay").innerText = "🎬 " + (video.title || "영상 재생");
 
+      const yId = extractYouTubeId(url);
       const isVertical = (video.aspect === "vertical" || url.includes("shorts") || url.includes("instagram.com") || url.includes("tiktok.com"));
+      
       dialog.className = isVertical ? "modal-dialog vertical" : "modal-dialog horizontal";
       wrap.className = isVertical ? "responsive-video-wrap vertical" : "responsive-video-wrap horizontal";
       wrap.innerHTML = "";
 
-      if (directBtn) {
-        directBtn.href = url;
-        directBtn.innerText = url.includes("instagram.com") ? "📸 Instagram 원본 열기 ↗" : url.includes("tiktok.com") ? "🎵 TikTok 원본 열기 ↗" : "▶ YouTube 새 탭 열기 ↗";
-        directBtn.style.display = "inline-flex";
-      }
-
-      const yId = extractYouTubeId(url);
-
-      // (A) 유튜브 영상
+      // 1. 유튜브 영상 (쇼츠 포함): 모달 안에서 100% 즉시 재생
       if (yId) {
+        if (directBtn) {
+          directBtn.href = url;
+          directBtn.innerText = "▶ YouTube 새 탭 열기 ↗";
+          directBtn.style.display = "inline-flex";
+        }
         const iframe = document.createElement("iframe");
         iframe.src = `https://www.youtube.com/embed/${yId}?autoplay=1&mute=0&playsinline=1&rel=0`;
         iframe.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
@@ -1518,47 +1518,25 @@
         iframe.setAttribute("allowfullscreen", "true");
         wrap.appendChild(iframe);
       } 
-      // (B) 인스타그램 릴스 전용 공식 임베드 뷰어
-      else if (url.includes("instagram.com")) {
-        const igMatch = url.match(/instagram\.com\/(?:reel|reels|p)\/([a-zA-Z0-9_-]+)/);
-        if (igMatch && igMatch[1]) {
-          const iframe = document.createElement("iframe");
-          iframe.src = `https://www.instagram.com/reel/${igMatch[1]}/embed/captioned/`;
-          iframe.setAttribute("allowtransparency", "true");
-          iframe.setAttribute("allowfullscreen", "true");
-          iframe.setAttribute("frameborder", "0");
-          iframe.style.width = "100%";
-          iframe.style.height = "100%";
-          iframe.style.minHeight = "480px";
-          wrap.appendChild(iframe);
-        } else {
-          window.open(url, "_blank");
-          return;
-        }
-      } 
-      // (C) 틱톡 공식 임베드 플레이어
-      else if (url.includes("tiktok.com")) {
-        const tkMatch = url.match(/\/video\/(\d+)/);
-        if (tkMatch && tkMatch[1]) {
-          const iframe = document.createElement("iframe");
-          iframe.src = `https://www.tiktok.com/embed/v2/${tkMatch[1]}`;
-          iframe.setAttribute("allow", "encrypted-media;");
-          iframe.setAttribute("allowfullscreen", "true");
-          iframe.setAttribute("frameborder", "0");
-          iframe.style.width = "100%";
-          iframe.style.height = "100%";
-          iframe.style.minHeight = "480px";
-          wrap.appendChild(iframe);
-        } else {
-          window.open(url, "_blank");
-          return;
-        }
-      } 
-      // (D) 기타 직접 비디오 링크
+      // 2. 인스타 / 틱톡 등 외부 앱 차단 링크: 에러 화면 대신 안전 바로가기 안내
       else {
-        const vid = document.createElement("video");
-        vid.src = url; vid.controls = true; vid.autoplay = true;
-        wrap.appendChild(vid);
+        const isInsta = url.includes("instagram.com");
+        const platformName = isInsta ? "Instagram" : "TikTok";
+        if (directBtn) directBtn.style.display = "none";
+
+        wrap.innerHTML = `
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height:360px; text-align:center; padding:24px; background:rgba(0,0,0,0.7);">
+            <div style="font-size:42px; margin-bottom:12px;">${isInsta ? '📸' : '🎵'}</div>
+            <div style="font-size:15px; font-weight:700; color:#fff; margin-bottom:8px;">${platformName} 보안 정책 안내</div>
+            <div style="font-size:12px; color:var(--text-secondary); line-height:1.5; margin-bottom:20px;">
+              ${platformName} 정책상 타 웹사이트 내부 재생이 차단되어 있습니다.<br>
+              아래 버튼을 누르면 원본 앱/웹으로 즉시 연결됩니다.
+            </div>
+            <a href="${url}" target="_blank" class="btn-action pri" style="padding:10px 20px; font-size:13px; text-decoration:none;">
+              🚀 ${platformName} 앱에서 시청하기 ↗
+            </a>
+          </div>
+        `;
       }
 
       document.getElementById("videoModal").classList.add("active");

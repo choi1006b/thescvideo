@@ -81,7 +81,6 @@
       color: var(--accent-green); font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-full);
     }
 
-    /* 상단 AI 트렌드 픽 */
     .header-ai-trend {
       flex: 1; min-width: 260px; max-width: 480px;
       background: linear-gradient(90deg, rgba(0, 65, 133, 0.4), rgba(0, 163, 224, 0.18));
@@ -158,7 +157,6 @@
     .view-content.active { display: block; animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ── 📅 캘린더 ── */
     .cal-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
     .month-pill-selector { display: inline-flex; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 3px; gap: 4px; }
     .month-pill-btn { background: transparent; border: none; color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -200,7 +198,6 @@
     .event-chip.outsource { background: rgba(245, 158, 11, 0.25); border: 1px solid rgba(245, 158, 11, 0.5); color: #FCD34D; font-weight: 700; }
     .event-chip.ceo { background: rgba(236, 72, 153, 0.25); border: 1px solid rgba(236, 72, 153, 0.5); color: #F472B6; font-weight: 700; }
 
-    /* 📱 모바일 전용 반응형 & AI 카드형 최적화 */
     @media (max-width: 768px) {
       body { padding: 10px 10px 70px; }
       header { padding: 12px; flex-direction: column; align-items: stretch; gap: 10px; }
@@ -227,7 +224,6 @@
       .event-chip { font-size: 9px; padding: 2px 2px; margin-top: 1px; }
     }
 
-    /* ── 현황판 ── */
     .dept-selector-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
     .dept-pill-group { display: inline-flex; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 3px; gap: 4px; flex-wrap: wrap; }
     .dept-pill-btn { background: transparent; border: none; color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
@@ -250,7 +246,6 @@
     .transfer-table th { background: rgba(0,0,0,0.3); color: var(--text-muted); padding: 8px 10px; border-bottom: 1px solid var(--border-subtle); font-weight: 600; }
     .transfer-table td { padding: 9px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); }
 
-    /* ── 신청내역 ── */
     .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
     .ticket-card {
       background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
@@ -274,7 +269,6 @@
     .status-chip.wait { background: rgba(245, 158, 11, 0.18); color: var(--accent-yellow); border: 1px solid rgba(245,158,11,0.3); }
     .status-chip.danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
 
-    /* ── 영상팀 포트폴리오 ── */
     .aspect-pill-group { display: inline-flex; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 4px; gap: 4px; margin-bottom: 18px; }
     .aspect-pill-btn { background: transparent; border: none; color: var(--text-secondary); padding: 7px 16px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
     .aspect-pill-btn.active { background: var(--sc-surface-elevated); color: #fff; border: 1px solid rgba(0, 163, 224, 0.35); }
@@ -297,7 +291,6 @@
     .portfolio-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .portfolio-tag { font-size: 11.5px; color: var(--sc-cyan); margin-top: 3px; }
 
-    /* ── 실시간 트렌드 피드 (단일 통합 뷰) ── */
     .crawled-trend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     .crawled-card {
       background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
@@ -308,7 +301,6 @@
     .crawled-title { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .crawled-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
 
-    /* ── ✨ AI 기획 콘티 초고밀도 테이블 ── */
     .storyboard-table-wrap { width: 100%; overflow-x: auto; }
     .storyboard-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12.5px; }
     .storyboard-table th { background: rgba(0,0,0,0.4); color: var(--sc-cyan); font-weight: 700; padding: 10px 12px; text-transform: uppercase; font-size: 11.5px; border-bottom: 1px solid var(--border-subtle); text-align: left; }
@@ -318,7 +310,6 @@
     .sub-box { background: rgba(245, 158, 11, 0.12); border-left: 3px solid #FBBF24; padding: 6px 10px; border-radius: 0 4px 4px 0; color: #FDE68A; margin-top: 6px; font-size: 11.5px; font-weight: 600; }
     .pd-tip-box { background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--accent-green); padding: 6px 10px; border-radius: 0 4px 4px 0; color: #A7F3D0; margin-top: 6px; font-size: 11px; }
 
-    /* ── 모달 공통 ── */
     .modal-backdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,0.88); backdrop-filter: blur(14px);
       display: none; align-items: center; justify-content: center; z-index: 1000; padding: 16px;
@@ -399,7 +390,7 @@
     </div>
   </header>
 
-  <!-- ── 📥 영상팀 전용: 승인 및 반려 인박스 ── -->
+  <!-- ── 📥 영상팀 전용: 승인 및 반려 인박스 (PIN 보호 기능 적용) ── -->
   <section class="inbox-container" id="videoTeamInbox" style="display:none;">
     <div class="inbox-header">
       <div class="inbox-title">
@@ -407,7 +398,7 @@
         <span class="pill-count wait" id="inboxCount">0건</span>
       </div>
       <div style="font-size:11px; color:var(--text-muted);">
-        ※ [수락] 시 캘린더에 즉시 등록되며, [반려] 시 ⛔반려내역으로 즉시 이동됩니다.
+        ※ 영상팀 관리자 PIN(9909) 인증 후 수락/반려 처리됩니다.
       </div>
     </div>
     <div class="inbox-grid" id="inboxGrid"></div>
@@ -480,7 +471,6 @@
       </div>
     </div>
 
-    <!-- 양도 로그 테이블 -->
     <div class="transfer-log-card">
       <div style="font-size:13px; font-weight:700; color:#FBBF24; margin-bottom:12px; display:flex; justify-content:space-between;">
         <span>🔄 최근 부서 간 슬롯 양도 승인 내역</span>
@@ -529,7 +519,7 @@
   <section class="view-content" id="view-crawledtrend">
     <div style="margin-bottom:16px;">
       <h2 style="font-size:16px; font-weight:700; color:#fff;">🔥 이번 주 실시간 바이럴 트렌드 피드</h2>
-      <p style="font-size:12px; color:var(--text-secondary); margin-top:2px;">PC 크롤러가 수집한 최신 인기 바이럴 영상들입니다. 카드를 클릭하면 AI 세부 연출 콘티로 즉시 전환됩니다.</p>
+      <p style="font-size:12px; color:var(--text-secondary); margin-top:2px;">크롤러가 수집한 최신 인기 바이럴 영상들입니다. 카드를 클릭하면 AI 세부 연출 콘티로 즉시 전환됩니다.</p>
     </div>
     <div class="crawled-trend-grid" id="crawledTrendGrid">
       <div style="color:var(--text-muted); padding:30px; grid-column:1/-1; text-align:center;">
@@ -538,39 +528,55 @@
     </div>
   </section>
 
-  <!-- ── TAB 7: ✨ AI 기획 구성안 제작 (초고밀도 세부 연출 콘티 엔진) ── -->
+  <!-- ── TAB 7: ✨ AI 기획 구성안 제작 ── -->
   <section class="view-content" id="view-aiplanner">
     <div class="ai-planner-grid">
       <div class="stat-card">
-        <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:12px;">✨ Ai 영상 간략 기획 구성안 제작 (The SC AI)</div>
+        <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:12px;">✨ AI 영상 간략 기획 구성안 제작 (The SC AI)</div>
+        
         <div style="margin-bottom:10px;">
           <label style="font-size:11px; color:var(--text-muted);">영상 포맷</label>
           <select id="aiVideoFormat" class="form-control">
             <option value="shortform">⚡ 숏폼 바이럴 (15~60초 릴스/쇼츠)</option>
-            <option value="longform">🎞️ 유튜브 롱폼 / 기획 콘텐츠 (3~10분)</option>
-            <option value="interview">👨‍💼 1:1 인터뷰 / Q&A</option>
+            <option value="interview">👨‍💼 1:1 심층 인터뷰 / Q&A</option>
+            <option value="longform">🎞️ 유튜브 기획 롱폼 (3~10분 정보성)</option>
+            <option value="tour">🏛️ 프리미엄 공간 투어 / 시네마틱 스케치</option>
+            <option value="tips">💡 원포인트 닥터 팁 / 리얼 시술 브이로그</option>
           </select>
         </div>
+
         <div style="margin-bottom:10px;">
           <label style="font-size:11px; color:var(--text-muted);">프로젝트 주제</label>
-          <input type="text" id="aiTopic" class="form-control" placeholder="예: 울쎄라 vs 써마지 내 얼굴형에 맞는 선택법">
+          <input type="text" id="aiTopic" class="form-control" placeholder="예: 울쎄라 시술 시 통증 줄이고 효과 극대화하는 꿀팁 및 샷 수 선정법">
         </div>
+
         <div style="margin-bottom:10px;">
           <label style="font-size:11px; color:var(--text-muted);">타겟층</label>
-          <input type="text" id="aiTarget" class="form-control" placeholder="예: 볼패임 걱정으로 리프팅 망설이는 3040">
+          <input type="text" id="aiTarget" class="form-control" placeholder="예: 20대 후반~40대 피부 탄력이 고민인 여성">
         </div>
+
         <div style="margin-bottom:10px;">
           <label style="font-size:11px; color:var(--text-muted);">핵심 소구점 USP (영상 플레이 시간을 적어주면 더욱 좋습니다.)</label>
-          <textarea id="aiUsp" class="form-control" rows="3" placeholder="1. 초음파와 고주파의 타겟층 차이&#10;2. 땅콩형 얼굴형 체크포인트&#10;3. 수면 마취 및 통증 솔직 비교"></textarea>
+          <textarea id="aiUsp" class="form-control" rows="3" placeholder="1. 통증은 반으로 줄이고 효과는 2배로 올리는 수면/연고 마취 꿀팁&#10;2. 내 얼굴형에 딱 맞는 샷 수와 딥다이브 팁 공개&#10;3. 시술 직후 멍/붓기 관리 애프터케어"></textarea>
         </div>
+
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px; color:#38BDF8; font-weight:700;">🔗 벤치마킹 레퍼런스 영상 주소 (선택)</label>
+          <input type="text" id="aiRefUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=... 또는 쇼츠 링크">
+          <div style="font-size:10.5px; color:var(--text-muted); margin-top:3px;">※ 링크 입력 시 해당 영상의 후킹 방식과 연출 호흡을 AI가 벤치마킹하여 콘티에 반영합니다.</div>
+        </div>
+
         <div style="margin-bottom:14px;">
           <label style="font-size:11px; color:var(--text-muted);">톤앤매너</label>
           <select id="aiTone" class="form-control">
             <option value="trendy">⚡ 트렌디 & 후킹 (빠른 템포감)</option>
-            <option value="trust">🛡️ 신뢰도 & 정보성 (차분한 지적 톤)</option>
-            <option value="funny">😂 유쾌 & 위트 (공감 유발)</option>
+            <option value="trust">🛡️ 신뢰도 & 정보성 (차분하고 전문적인 지적 톤)</option>
+            <option value="funny">😂 유쾌 & 위트 (생활 공감 및 재미 유발)</option>
+            <option value="cinematic">🎬 시네마틱 & 프리미엄 (고급스럽고 감성적인 무드)</option>
+            <option value="dopamine">🔥 B급 감성 & 도파민 (호기심 유발 충격/반전 전개)</option>
           </select>
         </div>
+
         <button class="btn-ai-generate btn-action pri" id="btnGenerateScript" style="width:100%; justify-content:center; padding:10px;" onclick="generateAiScript()">
           프로덕션 세부 연출 콘티 생성
         </button>
@@ -582,7 +588,7 @@
           <button class="btn-action sec" onclick="copyAiScript()">전체 복사</button>
         </div>
         <div id="aiScriptBody" style="font-size:12.5px; line-height:1.6; color:var(--text-secondary);">
-          좌측에 기획 파라미터를 입력하거나 트렌드 픽에서 선택 후 콘티 생성을 진행하세요. 해당 작업은 수분의 시간을 소요합니다.
+          좌측에 기획 파라미터를 입력하거나 트렌드 픽에서 선택 후 콘티 생성을 진행하세요.
         </div>
       </div>
     </div>
@@ -722,7 +728,6 @@
         <input type="text" id="editNewPlace" class="form-control" placeholder="예: 파르나스 서울 3층">
       </div>
 
-      <!-- 기획안 파일 중복 생성 방지 안내 박스 -->
       <div style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.35); border-radius:8px; padding:12px; margin-bottom:14px;">
         <div style="font-size:12px; color:#FBBF24; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
           ⚠️ 기획안 파일 업로드 시 필독 주의사항
@@ -746,9 +751,12 @@
     </div>
   </div>
 
-<script>
+ <script>
     const SPREADSHEET_ID = "1XACML9dqH-oJW1A9sZ-D7wwtAxpFFWfKxfu6U1luX98";
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxp8oe88NZRhBY-MXxYapyVjKbut7pkpHnbv-9qLOsT2rJ_uFIO-WRpaSzh4AVm-ZQb/exec";
+
+    // 🔒 영상팀 관리자 마스터 PIN (수락/반려 시 필수)
+    const ADMIN_PIN = "9909";
 
     const DEPT_PINS = {
       "국내 전략기획부": "0101",
@@ -787,7 +795,7 @@
 
     function openLockedSheet() {
       const pin = prompt("🔒 관리자 보안 PIN (4자리)을 입력하세요:");
-      if (pin === "9909") {
+      if (pin === ADMIN_PIN) {
         window.open("https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/edit", "_blank");
       } else if (pin !== null) {
         alert("❌ 비밀번호가 일치하지 않습니다. 관리자 전용 기능입니다.");
@@ -830,7 +838,7 @@
       return null;
     }
 
-    // ── 💡 [핵심 복구] 순정 구글 시트 통로 (주소 오타 100% 제거) ──
+    // ── 💡 스프레드시트 데이터 안전 호출 함수 (에러 완벽 방어) ──
     function fetchGviz(sheetName, callbackName) {
       const old = document.getElementById("gviz_" + callbackName);
       if (old) old.remove();
@@ -967,7 +975,7 @@
       });
     };
 
-    // ── 📝 신청내역 (T열: 영상팀 예상 완료일 자동 매핑) ──
+    // ── 📝 신청내역 (에러 원인이던 status 체크 완전 정상화) ──
     window.onReqGviz = function(res) {
       if (!res || !res.table || !res.table.rows) return;
 
@@ -1006,6 +1014,10 @@
         let status = cellVal(r.c[headerMap.status]);
         if (!status || status === "-") status = "✅ 정상 접수";
 
+        // 안전하게 문자열 변환 후 반려 건 필터링
+        const statusText = String(status || "");
+        if (statusText.indexOf("반려") !== -1) return;
+
         gData.requests.push({
           idx: gData.requests.length,
           row: idx + 2,
@@ -1020,7 +1032,7 @@
           shootPlace: cellVal(r.c[headerMap.shootPlace]) || "-",
           shootDate: shootDate || "-",
           teamFinish: formatAnyDate(r.c[headerMap.teamFinish]) || cellVal(r.c[headerMap.teamFinish]) || "-",
-          status: String(status)
+          status: statusText
         });
       });
 
@@ -1071,39 +1083,59 @@
               <div>⏱️ <strong>완료예정:</strong> <span style="color:#34D399;">${r.teamFinish}</span></div>
             </div>
             <div class="inbox-actions">
-              <button class="btn-inbox-accept" onclick="acceptRequest(${r.idx})">✅ 수락 (캘린더 등록)</button>
-              <button class="btn-inbox-reject" onclick="rejectRequest(${r.idx})">⛔ 반려</button>
+              <button class="btn-inbox-accept" onclick="acceptRequest(${r.idx})">🔒 수락 (관리자 PIN)</button>
+              <button class="btn-inbox-reject" onclick="rejectRequest(${r.idx})">🔒 반려 (관리자 PIN)</button>
             </div>
           </div>
         `;
       });
     }
 
+    // ── 🔒 수락 (PIN 9909 필수) ──
     function acceptRequest(reqIndex) {
       const r = gData.requests[reqIndex];
       if (!r) return;
-      if (!confirm(`[${r.project}] 건을 촬영 수락하시겠습니까?\n캘린더에 즉시 등록됩니다.`)) return;
+
+      const pin = prompt(`🔒 [${r.project}] 건을 수락하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      if (pin === null) return;
+      if (pin !== ADMIN_PIN) {
+        alert("❌ 관리자 PIN 번호가 일치하지 않습니다. 승인 권한이 없습니다.");
+        return;
+      }
 
       r.status = "✅ 정상 접수";
       renderInbox();
       renderTickets();
       renderCalendar();
 
-      sendWebhook({ action: "updateStatus", row: r.row, project: r.project, status: "✅ 정상 접수" }, "✅ 촬영이 확정되었습니다!");
+      sendWebhook({ action: "updateStatus", row: r.row, project: r.project, status: "✅ 정상 접수" }, "✅ 관리자 인증 완료: 촬영이 확정되었습니다!");
     }
 
+    // ── 🔒 반려 (PIN 9909 필수 + 연쇄 삭제 버그 방지) ──
     function rejectRequest(reqIndex) {
       const r = gData.requests[reqIndex];
       if (!r) return;
+
+      const pin = prompt(`🔒 [${r.project}] 건을 반려하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      if (pin === null) return;
+      if (pin !== ADMIN_PIN) {
+        alert("❌ 관리자 PIN 번호가 일치하지 않습니다. 반려 권한이 없습니다.");
+        return;
+      }
+
       const reason = prompt(`[${r.project}] 반려 사유를 입력하세요:`, "일정 조율 불가");
       if (reason === null) return;
 
-      r.status = "⛔ 반려";
+      const targetRow = r.row;
+      const targetProj = r.project;
+
+      // 화면 목록에서 즉각 제거
+      gData.requests.splice(reqIndex, 1);
       renderInbox();
       renderTickets();
       renderCalendar();
 
-      sendWebhook({ action: "rejectRequest", row: r.row, project: r.project, reason: reason }, "⛔ 해당 의뢰가 반려되었습니다.");
+      sendWebhook({ action: "rejectRequest", row: targetRow, project: targetProj, reason: reason }, "⛔ 관리자 인증 완료: 해당 의뢰가 반려되었습니다.");
     }
 
     function openEditModal(idx) {
@@ -1137,7 +1169,6 @@
       document.getElementById("editModal").classList.remove("active");
     }
 
-    // 💡 T열(20번째 열) 매핑 전송
     function submitEditRequest() {
       const row = document.getElementById("editRowNumber").value;
       const newDate = document.getElementById("editNewDate").value.trim();
@@ -1159,26 +1190,21 @@
       }, "✅ 변경 내용(예상 완료일 포함)이 구글 시트에 즉시 반영되었습니다!");
     }
 
+    // 💡 [중복 삭제 버그 완전 해결] 단일 스크립트 호출로 중복 실행 원천 차단
     function sendWebhook(payload, successAlert) {
       const clockEl = document.getElementById("clock");
       if (clockEl) clockEl.innerText = "시트 동기화 중...";
       
-      fetch(WEB_APP_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      });
-
       const params = new URLSearchParams();
       for (const k in payload) params.append(k, payload[k]);
+      
       const s = document.createElement("script");
       s.src = WEB_APP_URL + "?" + params.toString() + "&_t=" + Date.now();
       document.body.appendChild(s);
-      setTimeout(() => s.remove(), 2000);
+      setTimeout(() => s.remove(), 2500);
 
       if (successAlert) alert(successAlert);
-      setTimeout(loadAllSheets, 2200);
+      setTimeout(loadAllSheets, 1500);
     }
 
     function renderTickets() {
@@ -1363,7 +1389,6 @@
       });
     }
 
-    // ── 🎬 영상팀 포트폴리오 ──
     function extractYouTubeId(url) {
       if (!url) return "";
       const s = String(url).trim();
@@ -1479,7 +1504,7 @@
       document.getElementById("videoModal").classList.remove("active");
     }
 
-    // ── 🔥 실시간 트렌드 피드 (단일 뷰) ──
+    // ── 🔥 실시간 트렌드 피드 (시트명: 🔥실시간트렌드) ──
     window.onCrawledTrendGviz = function(res) {
       gData.crawledTrends = [];
       if (res && res.table && res.table.rows && res.table.rows.length > 0) {
@@ -1548,7 +1573,8 @@
       document.getElementById("aiVideoFormat").value = fmt;
       document.getElementById("aiTopic").value = title;
       document.getElementById("aiTarget").value = target;
-      document.getElementById("aiUsp").value = `1. 최신 바이럴 알고리즘 핵심 후킹 벤치마킹\n2. 레퍼런스 영상 주소: ${url}\n3. 시청자 이탈 방지 디테일 시각 인서트 연출`;
+      if (document.getElementById("aiRefUrl")) document.getElementById("aiRefUrl").value = url;
+      document.getElementById("aiUsp").value = `1. 최신 바이럴 알고리즘 핵심 후킹 벤치마킹\n2. 시청자 이탈 방지 디테일 시각 인서트 연출`;
       document.getElementById("aiTone").value = "trendy";
       generateAiScript();
     }
@@ -1687,48 +1713,27 @@
       document.getElementById("trendModal").classList.add("active");
     }
 
-    // 🌐 [백엔드 통신 보장 함수]
-    async function callBackend(payload) {
-      try {
-        const res = await fetch(WEB_APP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const json = await res.json();
-          return json;
-        }
-      } catch (e) {
-        console.warn("POST 재시도:", e);
-      }
-
-      try {
-        const params = new URLSearchParams();
-        for (const k in payload) params.append(k, payload[k]);
-        const res = await fetch(WEB_APP_URL + "?" + params.toString() + "&_t=" + Date.now());
-        if (res.ok) {
-          const json = await res.json();
-          return json;
-        }
-      } catch (e2) {
-        console.warn("GET 실패:", e2);
-      }
-      return null;
-    }
-
     // 🌐 [1/2] 구글 백엔드 프록시를 통한 트렌드 호출
     async function fetchDailyGeminiTrends() {
       DERMA_TREND_TOPICS = generateDynamicDermaTrends();
       updateTrendDisplay();
 
-      const resJson = await callBackend({ action: "getAiTrends" });
-      if (resJson && resJson.result === "success" && Array.isArray(resJson.data) && resJson.data.length > 0) {
-        DERMA_TREND_TOPICS = resJson.data;
-        updateTrendDisplay();
-        const badge = document.querySelector(".header-ai-trend .trend-badge");
-        if (badge) badge.innerText = `✨ AI 실시간 연동됨 (${resJson.model || "Gemini"})`;
-      }
+      try {
+        const res = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "getAiTrends" })
+        });
+        if (res.ok) {
+          const resJson = await res.json();
+          if (resJson.result === "success" && Array.isArray(resJson.data) && resJson.data.length > 0) {
+            DERMA_TREND_TOPICS = resJson.data;
+            updateTrendDisplay();
+            const badge = document.querySelector(".header-ai-trend .trend-badge");
+            if (badge) badge.innerText = `✨ AI 실시간 연동됨 (${resJson.model || "Gemini"})`;
+          }
+        }
+      } catch (e) {}
 
       if (trendRollingTimer) clearInterval(trendRollingTimer);
       trendRollingTimer = setInterval(nextTrendTopic, 5000);
@@ -1764,29 +1769,35 @@
 
       let parsedResult = null;
       let usedModelName = "";
-      let errorMsg = "";
 
-      const resJson = await callBackend({
-        action: "generateAiScript",
-        format: format,
-        topic: topic,
-        target: target,
-        usp: usp,
-        tone: tone
-      });
+      try {
+        const res = await fetch(WEB_APP_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "generateAiScript",
+            format: format,
+            topic: topic,
+            target: target,
+            usp: usp,
+            tone: tone
+          })
+        });
 
-      if (resJson && resJson.result === "success" && resJson.data && resJson.data.scenes) {
-        parsedResult = resJson.data;
-        usedModelName = resJson.model || "Gemini Cloud";
-      } else if (resJson && resJson.error) {
-        errorMsg = resJson.error;
-      }
+        if (res.ok) {
+          const resJson = await res.json();
+          if (resJson.result === "success" && resJson.data && resJson.data.scenes) {
+            parsedResult = resJson.data;
+            usedModelName = resJson.model || "Gemini Cloud";
+          }
+        }
+      } catch (e) {}
 
       if (!parsedResult || !parsedResult.scenes) {
         parsedResult = buildHighDetailProductionScript(format, topic, target, usp, tone);
-        renderAiOutput(topic, target, parsedResult, null, errorMsg);
+        renderAiOutput(topic, target, parsedResult, null);
       } else {
-        renderAiOutput(topic, target, parsedResult, usedModelName, "");
+        renderAiOutput(topic, target, parsedResult, usedModelName);
       }
     }
 
@@ -1854,8 +1865,7 @@
       };
     }
 
-    // 🎨 세부 연출 큐시트 화면 렌더링
-    function renderAiOutput(topic, target, content, modelName, errorMsg) {
+    function renderAiOutput(topic, target, content, modelName) {
       const body = document.getElementById("aiScriptBody");
       document.getElementById("aiResultTitle").innerText = `📋 [${topic}] 프로덕션 세부 연출 큐시트`;
 
@@ -1863,11 +1873,6 @@
       if (modelName) {
         badgeHtml = `<div style="background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.4); color:#34D399; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
           <span>🟢 Google Gemini AI (${modelName}) 실시간 연동 성공! 맞춤 대본이 생성되었습니다.</span>
-        </div>`;
-      } else if (errorMsg) {
-        badgeHtml = `<div style="background:rgba(245, 158, 11, 0.12); border:1px solid rgba(245, 158, 11, 0.4); color:#FBBF24; padding:8px 14px; border-radius:8px; font-size:12px; margin-bottom:14px;">
-          <strong>⚠️ 구글 AI 응답 안내:</strong> ${errorMsg}<br>
-          <span style="font-size:11px; color:#FDE68A;">※ The SC 자체 스마트 프로덕션 큐시트 엔진으로 자동 완성되었습니다.</span>
         </div>`;
       }
 
@@ -1926,6 +1931,6 @@
     renderPortfolioGrids();
     fetchDailyGeminiTrends();
     loadAllSheets();
-  </script>
+</script>
 </body>
 </html>

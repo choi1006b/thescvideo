@@ -536,7 +536,7 @@
   <section class="view-content" id="view-requests">
     <div class="req-toolbar">
       <div class="req-toolbar-info" id="reqToolbarInfo">신청 내역을 불러오는 중...</div>
-      <button class="btn-action sec btn-past-toggle" id="btnPastToggle" onclick="togglePastRequests()">🗂️ 지난 촬영 일정 보기</button>
+      <button class="btn-action sec btn-past-toggle" id="btnPastToggle" onclick="togglePastRequests()">🗂️ 숨긴 항목 보기</button>
     </div>
     <div class="tickets-grid" id="reqTicketsGrid"></div>
   </section>
@@ -1098,6 +1098,7 @@
     // (구글폼에 질문을 추가하면 새 열이 중간에 끼어들어 뒤쪽 열이 밀리기 때문)
     const REQ_HEADER_RULES = [
       // [키, 판정 함수] — 위에서부터 먼저 맞는 규칙이 해당 열을 가져감
+      ["hidden",      n => n.includes("숨김")],
       ["timestamp",   n => n.includes("타임스탬프")],
       ["dept",        n => n.includes("신청부서") || n.includes("신청 부서")],
       ["applicant",   n => n.includes("신청자")],
@@ -1191,13 +1192,14 @@
           refLink: txt(r, "refLink"),
           manager: txt(r, "manager"),
           memo: txt(r, "memo"),
+          hidden: !!txt(r, "hidden"),
           teamFinish: formatAnyDate(cellAt(r, "teamFinish")) || txt(r, "teamFinish") || "-",
           status: statusText
         });
       });
 
       const badge = document.getElementById("reqBadge");
-      if (badge) badge.innerText = gData.requests.filter(r => !isPastRequest(r)).length;
+      if (badge) badge.innerText = gData.requests.filter(r => !isHiddenFromList(r)).length;
       renderInbox();
       renderTickets();
       renderCalendar();
@@ -1384,6 +1386,28 @@
       return false;
     }
 
+    // 촬영 일시가 없는 건 (편집 전용 등)
+    function hasNoShootDate(r) { return !parseDateParts(r.shootDate); }
+
+    // 목록에서 숨길 대상: 지난 촬영 일정 + 영상팀이 직접 숨긴 건 (캘린더에는 영향 없음)
+    function isHiddenFromList(r) { return !!r && (r.hidden || isPastRequest(r)); }
+
+    // 🙈 직접 숨기기 / 다시 보이기 (관리자 PIN 필요, 시트 '웹 숨김' 열에 기록 → 모든 사람 화면에 반영)
+    function setRequestHidden(idx, hide) {
+      const r = gData.requests[idx];
+      if (!r) return;
+      const pin = prompt(`🔒 [${r.project}] 건을 전체 신청내역에서 ${hide ? "숨기시겠습니까" : "다시 보이게 하시겠습니까"}?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      if (pin === null) return;
+      if (pin !== ADMIN_PIN) { alert("❌ 관리자 PIN 번호가 일치하지 않습니다."); return; }
+
+      r.hidden = hide;
+      const badge = document.getElementById("reqBadge");
+      if (badge) badge.innerText = gData.requests.filter(x => !isHiddenFromList(x)).length;
+      renderTickets();
+      sendWebhook({ action: "setHidden", row: r.row, project: r.project, hidden: hide ? "1" : "0" },
+        hide ? "🙈 전체 신청내역에서 숨겼습니다. ([숨긴 항목 보기]에서 다시 볼 수 있습니다)" : "👁️ 다시 보이도록 변경했습니다.");
+    }
+
     function togglePastRequests(forceOn) {
       showPastRequests = (forceOn === true) ? true : !showPastRequests;
       renderTickets();
@@ -1413,14 +1437,16 @@
       if (!grid) return;
       grid.innerHTML = "";
 
-      const pastCount = gData.requests.filter(isPastRequest).length;
-      const activeCount = gData.requests.length - pastCount;
+      const pastCount = gData.requests.filter(r => isPastRequest(r)).length;
+      const manualCount = gData.requests.filter(r => r.hidden && !isPastRequest(r)).length;
+      const hiddenCount = pastCount + manualCount;
+      const activeCount = gData.requests.length - hiddenCount;
       const info = document.getElementById("reqToolbarInfo");
-      if (info) info.innerHTML = `진행 예정 <strong>${activeCount}건</strong> · 지난 촬영 일정 <strong>${pastCount}건</strong>${showPastRequests ? "" : " (숨김)"} · 카드를 누르면 상세 내용을 볼 수 있습니다`;
+      if (info) info.innerHTML = `진행 중 <strong>${activeCount}건</strong> · 숨긴 항목 <strong>${hiddenCount}건</strong> (지난 촬영 ${pastCount} · 직접 숨김 ${manualCount})${showPastRequests ? " 표시 중" : ""} · 카드를 누르면 상세 내용을 볼 수 있습니다`;
       const tgl = document.getElementById("btnPastToggle");
       if (tgl) {
         tgl.classList.toggle("on", showPastRequests);
-        tgl.innerText = showPastRequests ? `🙈 지난 촬영 일정 숨기기` : `🗂️ 지난 촬영 일정 보기 (${pastCount})`;
+        tgl.innerText = showPastRequests ? `🙈 숨긴 항목 다시 감추기` : `🗂️ 숨긴 항목 보기 (${hiddenCount})`;
       }
 
       if (gData.requests.length === 0) {
@@ -1428,15 +1454,22 @@
         return;
       }
 
-      const visible = gData.requests.filter(r => showPastRequests || !isPastRequest(r));
+      const visible = gData.requests.filter(r => showPastRequests || !isHiddenFromList(r));
       if (visible.length === 0) {
-        grid.innerHTML = '<div style="color:var(--text-muted); padding:30px;">진행 예정인 신청 건이 없습니다. 위의 [지난 촬영 일정 보기]를 누르면 지난 건을 볼 수 있습니다.</div>';
+        grid.innerHTML = '<div style="color:var(--text-muted); padding:30px;">진행 중인 신청 건이 없습니다. 위의 [숨긴 항목 보기]를 누르면 숨긴 건을 볼 수 있습니다.</div>';
         return;
       }
 
       visible.forEach(r => {
         const idx = r.idx;
         const past = isPastRequest(r);
+        const manualHidden = r.hidden && !past;
+        let hideBtnHtml = "";
+        if (r.hidden) {
+          hideBtnHtml = `<button class="btn-action sec" style="width:100%; justify-content:center; font-size:11px; margin-top:4px;" onclick="event.stopPropagation(); setRequestHidden(${idx}, false)">👁️ 다시 보이기 (관리자 PIN)</button>`;
+        } else if (hasNoShootDate(r)) {
+          hideBtnHtml = `<button class="btn-action sec" style="width:100%; justify-content:center; font-size:11px; margin-top:4px; color:var(--text-muted);" onclick="event.stopPropagation(); setRequestHidden(${idx}, true)">🙈 목록에서 숨기기 (관리자 PIN · 촬영 일정 없는 건)</button>`;
+        }
         const isPending = r.status.includes("대기") || r.status.includes("변경");
         let deptClass = "";
         if (r.dept.includes("외주")) deptClass = " outsource";
@@ -1455,11 +1488,11 @@
         const refCount = extractUrls(r.refLink).length;
 
         grid.innerHTML += `
-          <div class="ticket-card${past ? ' is-past' : ''}" id="req-card-${idx}" onclick="openDetailModal(${idx})">
+          <div class="ticket-card${(past || r.hidden) ? ' is-past' : ''}" id="req-card-${idx}" onclick="openDetailModal(${idx})">
             <div class="ticket-top">
               <span class="ticket-dept${deptClass}">🏢 ${esc(r.dept)} · ${esc(r.applicant)}</span>
               <span>
-                <span class="status-chip ${isPending ? 'wait' : 'success'}">${esc(r.status)}</span>${past ? '<span class="past-chip">지난 일정</span>' : ''}
+                <span class="status-chip ${isPending ? 'wait' : 'success'}">${esc(r.status)}</span>${past ? '<span class="past-chip">지난 일정</span>' : ''}${manualHidden ? '<span class="past-chip">🙈 숨김</span>' : ''}
               </span>
             </div>
             <div class="ticket-proj">${esc(r.project)} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
@@ -1480,6 +1513,7 @@
               <button class="btn-action pri" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openDetailModal(${idx})">🔍 상세 보기 · 구성안</button>
               <button class="btn-action sec" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openEditModal(${idx})">✏️ 일정/장소 변경</button>
             </div>
+            ${hideBtnHtml}
           </div>
         `;
       });
@@ -1683,7 +1717,7 @@
 
     function jumpToRequestByIndex(idx) {
       // 캘린더에서 지난 일정을 누르면 숨김을 풀고 이동
-      if (!showPastRequests && isPastRequest(gData.requests[idx])) togglePastRequests(true);
+      if (!showPastRequests && isHiddenFromList(gData.requests[idx])) togglePastRequests(true);
       switchTab('requests');
       setTimeout(() => {
         const card = document.getElementById("req-card-" + idx);

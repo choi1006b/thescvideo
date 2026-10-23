@@ -1571,6 +1571,7 @@
         <div class="detail-actions">
           <button class="btn-action pri" onclick="switchDetailTab('plan')">✨ 이 의뢰로 구성안 자동 제작</button>
           <button class="btn-action sec" onclick="closeDetailModal(); openEditModal(${idx})">✏️ 일정/장소 변경 및 기획안 업로드</button>
+          <button class="btn-action sec" onclick="closeDetailModal(); jumpToRequestByIndex(${idx})">📍 전체 신청내역에서 위치 보기</button>
         </div>
       `;
 
@@ -1701,7 +1702,7 @@
           else if (ev.dept.includes("전략")) { cls = "strategy"; }
           else if (ev.dept.includes("퍼포")) { cls = "perf"; }
 
-          evsHtml += `<div class="event-chip ${cls}" onclick="jumpToRequestByIndex(${ev.idx})">${badgeText} ${ev.project}</div>`;
+          evsHtml += `<div class="event-chip ${cls}" onclick="openDetailModal(${ev.idx})" title="클릭하면 의뢰 상세 내용을 엽니다">${badgeText} ${ev.project}</div>`;
         });
 
         cell.innerHTML = `

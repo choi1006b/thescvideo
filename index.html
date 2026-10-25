@@ -1606,7 +1606,6 @@
       const planFirst = (r.plan || "").split("\n").map(l => l.trim()).filter(l => l && !/^https?:\/\//.test(l) && !/^-+$/.test(l))[0] || "";
       const topic = [r.project !== "-" ? r.project : "", planFirst.replace(URL_RE, "").replace(/[\/\s]+$/, "")].filter(Boolean).join(" - ");
       const uspLines = (r.scriptReq || "").split("\n").map(l => l.trim()).filter(Boolean);
-      if (r.cast) uspLines.push(`출연/포맷: ${r.cast.replace(/\n/g, " ")}`);
       const refs = extractUrls(r.refLink).concat(extractUrls(r.plan + "\n" + r.scriptReq));
 
       document.getElementById("apFormat").value = guessFormat(r);
@@ -1615,6 +1614,8 @@
       document.getElementById("apUsp").value = uspLines.join("\n");
       document.getElementById("apRefUrl").value = refs[0] || "";
       document.getElementById("apResultWrap").style.display = "none";
+      document.getElementById("btnAutoPlan").dataset.generated = "";
+      document.getElementById("btnAutoPlan").innerText = "✨ 이 의뢰 내용으로 구성안 자동 제작";
       document.getElementById("apResultBody").innerHTML = "";
     }
 
@@ -1638,8 +1639,11 @@
       wrap.style.display = "block";
       body.innerHTML = '<div style="text-align:center; padding:30px; color:var(--sc-cyan); font-weight:700;">⚡ 신청서 내용을 바탕으로 구성안을 작성하고 있습니다...</div>';
 
-      const { data, model } = await requestAiScript(params);
-      renderAiOutput(params.topic, params.target, data, model, { body: body, title: document.getElementById("apResultTitle") });
+      if (r) Object.assign(params, { videoType: r.videoType, workScope: r.workScope, cast: r.cast, place: r.shootPlace !== "-" ? r.shootPlace : "" });
+      params.noCache = btn.dataset.generated === "1"; // [다시 제작하기]는 캐시 무시하고 새로 생성
+      const { data, model, secs, error } = await requestAiScript(params);
+      renderAiOutput(params.topic, params.target, data, model, { body: body, title: document.getElementById("apResultTitle"), secs: secs, error: error });
+      btn.dataset.generated = "1";
       btn.disabled = false; btn.innerText = "🔄 다시 제작하기";
     }
 
@@ -2172,31 +2176,42 @@
       }
 
       const refUrl = document.getElementById("aiRefUrl") ? document.getElementById("aiRefUrl").value.trim() : "";
-      const { data, model } = await requestAiScript({ format, topic, target, usp, tone, refUrl });
-      renderAiOutput(topic, target, data, model);
+      const { data, model, secs, error } = await requestAiScript({ format, topic, target, usp, tone, refUrl });
+      renderAiOutput(topic, target, data, model, { secs: secs, error: error });
     }
 
     // Apps Script(Gemini) 백엔드로 콘티 요청 → 실패 시 내장 템플릿으로 대체
     // ※ refUrl / plan 값은 백엔드가 지원할 때만 반영됩니다 (미지원이면 무시됨)
     async function requestAiScript(p) {
+      const ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 90000) : null; // 90초 넘으면 템플릿으로 대체
+      const started = Date.now();
+      let errMsg = "";
       try {
         const res = await fetch(WEB_APP_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
+          signal: ctrl ? ctrl.signal : undefined,
           body: JSON.stringify({
             action: "generateAiScript",
             format: p.format, topic: p.topic, target: p.target || "", usp: p.usp || "", tone: p.tone,
-            refUrl: p.refUrl || "", plan: p.plan || ""
+            refUrl: p.refUrl || "", plan: p.plan || "",
+            videoType: p.videoType || "", workScope: p.workScope || "", cast: p.cast || "", place: p.place || "",
+            noCache: !!p.noCache
           })
         });
         if (res.ok) {
           const resJson = await res.json();
           if (resJson.result === "success" && resJson.data && resJson.data.scenes) {
-            return { data: resJson.data, model: resJson.model || "Gemini Cloud" };
+            if (timer) clearTimeout(timer);
+            return { data: resJson.data, model: resJson.model || "Gemini", secs: ((Date.now() - started) / 1000).toFixed(1) };
           }
+          errMsg = resJson.error || "";
         }
-      } catch (e) {}
-      return { data: buildHighDetailProductionScript(p.format, p.topic, p.target, p.usp, p.tone), model: null };
+      } catch (e) { errMsg = (e && e.name === "AbortError") ? "응답 시간 초과(90초)" : String(e); }
+      if (timer) clearTimeout(timer);
+      if (errMsg) console.warn("[AI 구성안] 실패 원인:", errMsg);
+      return { data: buildHighDetailProductionScript(p.format, p.topic, p.target, p.usp, p.tone), model: null, error: errMsg };
     }
 
     // 🎬 예비용 초고밀도 실무 큐시트 조립 엔진
@@ -2272,10 +2287,11 @@
       if (!modelName) {
         badgeHtml = `<div style="background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.35); color:#FBBF24; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:14px;">
           ⚠️ AI 서버 응답이 없어 기본 템플릿으로 작성된 구성안입니다. 내용을 꼭 검토·수정해 주세요.
+          ${(targetEls && targetEls.error) ? `<div style="font-weight:500; font-size:11px; margin-top:4px; opacity:0.85;">원인: ${esc(String(targetEls.error).slice(0, 160))}</div>` : ""}
         </div>`;
       } else {
         badgeHtml = `<div style="background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.4); color:#34D399; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
-          <span>🟢 Google Gemini AI (${modelName}) 실시간 연동 성공! 맞춤 대본이 생성되었습니다.</span>
+          <span>🟢 Gemini AI (${esc(modelName)}) 생성 완료${(targetEls && targetEls.secs) ? ` · ${targetEls.secs}초` : ""}</span>
         </div>`;
       }
 
@@ -2299,8 +2315,24 @@
         `;
       });
 
+      const asList = v => Array.isArray(v) ? v.filter(Boolean) : (v ? [v] : []);
+      const listBlock = (title, items, color) => {
+        const arr = asList(items);
+        if (!arr.length) return "";
+        return `<div style="border:1px solid var(--border-subtle); border-radius:8px; padding:12px 14px; margin-top:12px; font-size:12.5px;">
+          <div style="font-weight:700; color:${color}; margin-bottom:6px;">${title}</div>
+          <ul style="margin:0; padding-left:18px; line-height:1.7; color:var(--text-primary);">${arr.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+        </div>`;
+      };
+      const hooks = asList(content.hooks);
+      const hooksHtml = hooks.length ? `<div style="background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.35); border-radius:8px; padding:12px 14px; margin-bottom:16px; font-size:12.5px;">
+          <div style="font-weight:700; color:#FBBF24; margin-bottom:6px;">🪝 첫 장면 후킹 문구 후보</div>
+          ${hooks.map((h, i) => `<div style="margin-bottom:3px;"><strong>${i + 1}안.</strong> ${esc(h)}</div>`).join("")}
+        </div>` : "";
+
       body.innerHTML = `
         ${badgeHtml}
+        ${hooksHtml}
         <div style="background:rgba(0,0,0,0.3); border:1px solid var(--border-subtle); border-radius:8px; padding:14px; margin-bottom:16px; font-size:12px;">
           <div style="font-size:13.5px; color:#38BDF8; margin-bottom:8px; font-weight:700;">🎯 프로젝트 방향: ${esc(content.projectSummary)}</div>
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; line-height:1.6;">
@@ -2318,10 +2350,15 @@
             <tbody>${rowsHtml}</tbody>
           </table>
         </div>
+        ${listBlock("📋 필수 촬영 컷 리스트", content.shotList, "#34D399")}
+        ${listBlock("⚠️ 주의사항 (의료광고 심의·현장 준비)", content.cautions, "#FCA5A5")}
       `;
 
       lastGeneratedScript = `[The SC 프로덕션 세부 연출 큐시트] ${topic}\n타겟: ${content.targetAudience || target}\n분량: ${content.runTime}\nBGM: ${content.bgm}\n스타일: ${content.toneText}\n\n` + 
-        content.scenes.map(s => `${s.num} (${s.time})\n■ 비주얼/앵글:\n${s.video}\n■ 대사:\n${s.audio}\n■ 자막: ${s.sub}\n■ 연출팁: ${s.tip}\n`).join("\n");
+        (hooks.length ? `■ 후킹 문구 후보\n${hooks.map((h, i) => `${i + 1}안. ${h}`).join("\n")}\n\n` : "") +
+        content.scenes.map(s => `${s.num} (${s.time})\n■ 비주얼/앵글:\n${s.video}\n■ 대사:\n${s.audio}\n■ 자막: ${s.sub}\n■ 연출팁: ${s.tip}\n`).join("\n") +
+        (asList(content.shotList).length ? `\n■ 필수 촬영 컷\n- ${asList(content.shotList).join("\n- ")}\n` : "") +
+        (asList(content.cautions).length ? `\n■ 주의사항\n- ${asList(content.cautions).join("\n- ")}\n` : "");
     }
 
     function copyAiScript() {

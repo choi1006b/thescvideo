@@ -439,7 +439,7 @@
         <span class="pill-count wait" id="inboxCount">0건</span>
       </div>
       <div style="font-size:11px; color:var(--text-muted);">
-        ※ 영상팀 관리자 PIN(9909) 인증 후 수락/반려 처리됩니다.
+        ※ 카드를 누르면 의뢰 내용을 확인할 수 있습니다. 수락/반려는 영상팀 관리자 PIN 인증 후 처리됩니다.
       </div>
     </div>
     <div class="inbox-grid" id="inboxGrid"></div>
@@ -1231,22 +1231,23 @@
         });
 
         inboxGrid.innerHTML += `
-          <div class="inbox-card ${conflict ? 'conflict' : ''}">
+          <div class="inbox-card ${conflict ? 'conflict' : ''}" style="cursor:pointer;" onclick="openDetailModal(${r.idx})" title="클릭하면 의뢰 내용 전체를 확인합니다">
             <div class="inbox-card-top">
               <div>
-                <div class="inbox-dept">${r.dept} · ${r.applicant}</div>
-                <div class="inbox-proj">${r.project}</div>
+                <div class="inbox-dept">${esc(r.dept)} · ${esc(r.applicant)}</div>
+                <div class="inbox-proj">${esc(r.project)} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
               </div>
-              ${conflict ? `<span class="conflict-badge">🚨 일정 중복 (${conflict.project})</span>` : ''}
+              ${conflict ? `<span class="conflict-badge">🚨 일정 중복 (${esc(conflict.project)})</span>` : ''}
             </div>
             <div class="inbox-info-grid">
-              <div>📅 <strong>촬영희망:</strong> ${r.shootDate} (${r.timeSlot})</div>
-              <div>📍 <strong>장소:</strong> ${r.shootPlace} | 🎬 <strong>유형:</strong> ${r.videoType}</div>
-              <div>⏱️ <strong>완료예정:</strong> <span style="color:#34D399;">${r.teamFinish}</span></div>
+              <div>📅 <strong>촬영희망:</strong> ${esc(r.shootDate)} (${esc(r.timeSlot)})</div>
+              <div>📍 <strong>장소:</strong> ${esc(r.shootPlace)} | 🎬 <strong>유형:</strong> ${esc(r.videoType)}</div>
+              <div>🎯 <strong>희망 마감:</strong> ${esc(r.deadLine)} | ⏱️ <strong>완료예정:</strong> <span style="color:#34D399;">${esc(r.teamFinish)}</span></div>
             </div>
+            <button class="btn-action sec" style="width:100%; justify-content:center; font-size:12px; margin:6px 0;" onclick="event.stopPropagation(); openDetailModal(${r.idx})">🔍 의뢰 내용 확인 (기획 개요 · 소구점 · 레퍼런스)</button>
             <div class="inbox-actions">
-              <button class="btn-inbox-accept" onclick="acceptRequest(${r.idx})">🔒 수락 (관리자 PIN)</button>
-              <button class="btn-inbox-reject" onclick="rejectRequest(${r.idx})">🔒 반려 (관리자 PIN)</button>
+              <button class="btn-inbox-accept" onclick="event.stopPropagation(); acceptRequest(${r.idx})">🔒 수락 (관리자 PIN)</button>
+              <button class="btn-inbox-reject" onclick="event.stopPropagation(); rejectRequest(${r.idx})">🔒 반려 (관리자 PIN)</button>
             </div>
           </div>
         `;
@@ -1568,6 +1569,12 @@
         ${detailSection("👥 출연자 정보 · 제작 포맷", r.cast ? `<div class="detail-section-body">${linkify(r.cast)}</div>` : '<div class="detail-empty">없음</div>')}
         ${detailSection("📁 별도 파일", fileHtml)}
         ${r.memo ? detailSection("🗒️ 비고", `<div class="detail-section-body">${linkify(r.memo)}</div>`) : ""}
+        ${(r.status.includes("대기") || r.status.includes("변경")) ? `
+        <div class="detail-actions" style="padding:10px; border:1px solid rgba(245,158,11,0.35); border-radius:8px; background:rgba(245,158,11,0.06);">
+          <div style="width:100%; font-size:12px; font-weight:700; color:#FBBF24;">📥 승인 대기 중인 의뢰입니다 — 내용 확인 후 바로 처리할 수 있습니다</div>
+          <button class="btn-inbox-accept" style="flex:1;" onclick="closeDetailModal(); acceptRequest(${idx})">🔒 수락 (관리자 PIN)</button>
+          <button class="btn-inbox-reject" style="flex:1;" onclick="closeDetailModal(); rejectRequest(${idx})">🔒 반려 (관리자 PIN)</button>
+        </div>` : ""}
         <div class="detail-actions">
           <button class="btn-action pri" onclick="switchDetailTab('plan')">✨ 이 의뢰로 구성안 자동 제작</button>
           <button class="btn-action sec" onclick="closeDetailModal(); openEditModal(${idx})">✏️ 일정/장소 변경 및 기획안 업로드</button>

@@ -902,16 +902,22 @@
       { id: "v2", title: "원포인트 닥터 팁 (릴스 템플릿)", tag: "#릴스 #꿀팁 #바이럴숏폼", url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", thumb: "", aspect: "vertical" }
     ];
 
-    const sysDate = new Date();
-    const curYear = sysDate.getFullYear();
-    const curMonth = sysDate.getMonth() + 1;
-    const nextYear = curMonth === 12 ? curYear + 1 : curYear;
-    const nextMonth = curMonth === 12 ? 1 : curMonth + 1;
-
-    const btnCur = document.getElementById("btnCurrentMonth");
-    const btnNxt = document.getElementById("btnNextMonth");
-    if (btnCur) btnCur.innerText = `${curYear}년 ${curMonth}월 당월`;
-    if (btnNxt) btnNxt.innerText = `${nextYear}년 ${nextMonth}월 익월`;
+    // 📅 당월/익월 기준 — 페이지를 켜 둔 채 달이 바뀌어도 동기화 때 다시 계산됨
+    let curYear, curMonth, nextYear, nextMonth;
+    function refreshMonthContext() {
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth() + 1;
+      const changed = (y !== curYear || m !== curMonth);
+      curYear = y; curMonth = m;
+      nextYear = m === 12 ? y + 1 : y;
+      nextMonth = m === 12 ? 1 : m + 1;
+      const btnCur = document.getElementById("btnCurrentMonth");
+      const btnNxt = document.getElementById("btnNextMonth");
+      if (btnCur) btnCur.innerText = `${curYear}년 ${curMonth}월 당월`;
+      if (btnNxt) btnNxt.innerText = `${nextYear}년 ${nextMonth}월 익월`;
+      return changed;
+    }
+    refreshMonthContext();
 
     function openLockedSheet() {
       const pin = prompt("🔒 관리자 보안 PIN (4자리)을 입력하세요:");
@@ -970,6 +976,7 @@
 
     function loadAllSheets() {
       window.__lastSheetSync = Date.now();
+      if (refreshMonthContext()) { renderCalendar(); renderTickets(); } // 달이 바뀌었으면 캘린더 기준월 갱신
       const clockEl = document.getElementById("clock");
       if (clockEl) clockEl.innerText = "실시간 연동 중...";
       fetchGviz("📺실시간 현황판", "onDashGviz");

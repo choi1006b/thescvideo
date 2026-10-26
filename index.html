@@ -158,6 +158,34 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     .cal-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .cal-mode-tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+    .cal-mode-btn { background: var(--sc-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
+    .cal-mode-btn.active { background: var(--sc-surface-elevated); color: #fff; border-color: rgba(0, 163, 224, 0.5); box-shadow: 0 0 0 1px rgba(0, 163, 224, 0.25) inset; }
+    .cal-mode-desc { font-size: 11.5px; color: var(--text-muted); margin-left: 4px; }
+    /* ✂️ 편집 일정: 주(週) 단위 행 + 여러 날에 걸친 막대 */
+    .days-grid.edit-mode { display: flex; flex-direction: column; gap: 4px; }
+    .week-row { display: grid; grid-template-columns: repeat(7, 1fr); column-gap: 4px; row-gap: 3px; min-height: 85px; }
+    .week-row .day-card { min-height: 0; z-index: 0; }
+    .edit-bar {
+      z-index: 1; margin: 0 3px; font-size: 10.5px; font-weight: 700; line-height: 1; padding: 0 6px;
+      display: flex; align-items: center; gap: 3px; height: 20px; border-radius: 5px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+    }
+    .edit-bar:hover { filter: brightness(1.25); }
+    .edit-bar.cont-left { border-top-left-radius: 0; border-bottom-left-radius: 0; margin-left: -2px; border-left-style: dashed; }
+    .edit-bar.cont-right { border-top-right-radius: 0; border-bottom-right-radius: 0; margin-right: -2px; border-right-style: dashed; }
+    .edit-bar.biz { background: rgba(16, 185, 129, 0.22); border: 1px solid rgba(16, 185, 129, 0.45); color: #6EE7B7; }
+    .edit-bar.marketing { background: rgba(0, 163, 224, 0.22); border: 1px solid rgba(0, 163, 224, 0.45); color: #7DD3FC; }
+    .edit-bar.strategy { background: rgba(245, 158, 11, 0.22); border: 1px solid rgba(245, 158, 11, 0.45); color: #FCD34D; }
+    .edit-bar.perf { background: rgba(168, 85, 247, 0.22); border: 1px solid rgba(168, 85, 247, 0.45); color: #D8B4FE; }
+    .edit-bar.outsource { background: rgba(245, 158, 11, 0.3); border: 1px solid rgba(245, 158, 11, 0.55); color: #FDE68A; }
+    .edit-bar.ceo { background: rgba(236, 72, 153, 0.28); border: 1px solid rgba(236, 72, 153, 0.55); color: #F9A8D4; }
+    .edit-bar .end-mark { margin-left: auto; font-size: 10px; opacity: 0.9; }
+    @media (max-width: 768px) {
+      .week-row { min-height: 58px; column-gap: 2px; }
+      .edit-bar { font-size: 9px; height: 16px; padding: 0 3px; margin: 0 1px; }
+    }
+    .event-chip .ev-kind { font-size: 10px; opacity: 0.85; margin-right: 2px; }
     .month-pill-selector { display: inline-flex; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 3px; gap: 4px; }
     .month-pill-btn { background: transparent; border: none; color: var(--text-secondary); padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
     .month-pill-btn.active { background: var(--sc-blue); color: #fff; }
@@ -458,6 +486,11 @@
 
   <!-- ── TAB 1: 📅 스케쥴 캘린더 ── -->
   <section class="view-content active" id="view-calendar">
+    <div class="cal-mode-tabs">
+      <button class="cal-mode-btn active" id="calModeShoot" onclick="switchCalendarMode('shoot')">🎥 촬영 일정</button>
+      <button class="cal-mode-btn" id="calModeEdit" onclick="switchCalendarMode('edit')">✂️ 편집 일정</button>
+      <span class="cal-mode-desc" id="calModeDesc">촬영 희망 일시 기준 · 승인된 건만 표시</span>
+    </div>
     <div class="cal-header-bar">
       <div class="month-pill-selector">
         <button class="month-pill-btn active" id="btnCurrentMonth" onclick="toggleMonth('current')">당월</button>
@@ -1696,6 +1729,136 @@
       switchTab("aiplanner");
     }
 
+    // 📅 캘린더 모드: 'shoot' = 촬영 일정 / 'edit' = 편집 일정
+    let calendarMode = "shoot";
+
+    function switchCalendarMode(mode) {
+      calendarMode = mode;
+      document.getElementById("calModeShoot").classList.toggle("active", mode === "shoot");
+      document.getElementById("calModeEdit").classList.toggle("active", mode === "edit");
+      const desc = document.getElementById("calModeDesc");
+      if (desc) desc.innerText = (mode === "shoot")
+        ? "촬영 희망 일시 기준 · 승인된 건만 표시"
+        : "편집 기간 막대: 시작 = 촬영일(편집만 건은 접수일) → 끝 = 영상팀 예상 완료일(없으면 희망 마감일) · '촬영만' 건 제외";
+      renderCalendar();
+    }
+
+    // 편집 일정 기간
+    //  끝 = 영상팀 예상 완료일 (있으면 우선) → 없으면 희망 마감일
+    //  시작 = 촬영이 있는 건은 촬영 희망일 → 촬영일이 없으면(편집만) 접수일
+    function getEditSchedule(r) {
+      const fin = parseDateParts(r.teamFinish);
+      const dl = parseDateParts(r.deadLine);
+      const endParts = fin || dl;
+      if (!endParts) return null;
+      const end = dateFromParts(endParts);
+
+      let start = null;
+      const shoot = parseDateParts(r.shootDate);
+      if (shoot) start = dateFromParts(shoot);
+      else {
+        const ts = parseDateParts(r.timestamp);
+        if (ts) start = dateFromParts(ts);
+      }
+      if (!start || start > end) start = new Date(end);
+      return { parts: endParts, kind: fin ? "finish" : "deadline", start: start, end: end };
+    }
+
+    function deptClassOf(dept) {
+      if (dept.includes("외주")) return { cls: "outsource", badge: "[외주]" };
+      if (dept.includes("대표")) return { cls: "ceo", badge: "[대표]" };
+      if (dept.includes("사업")) return { cls: "biz", badge: `[${dept.slice(0, 2)}]` };
+      if (dept.includes("전략")) return { cls: "strategy", badge: `[${dept.slice(0, 2)}]` };
+      if (dept.includes("퍼포")) return { cls: "perf", badge: `[${dept.slice(0, 2)}]` };
+      return { cls: "marketing", badge: `[${dept.slice(0, 2)}]` };
+    }
+
+    function fmtMD(d) { return `${d.getMonth() + 1}/${d.getDate()}`; }
+
+    // ✂️ 편집 일정: 주 단위로 그리고, 여러 날에 걸친 일정은 막대로 길게 표시
+    function renderEditCalendar(grid, days) {
+      grid.classList.add("edit-mode");
+      const items = (gData.requests || []).map(r => {
+        if (!r.status || r.status.includes("대기") || r.status.includes("반려")) return null;
+        if (/촬영만|촬영 만/.test(r.workScope || "")) return null;
+        const es = getEditSchedule(r);
+        return es ? Object.assign({ r: r }, es) : null;
+      }).filter(Boolean);
+
+      for (let w = 0; w < days.length; w += 7) {
+        const week = days.slice(w, w + 7);
+        const wDates = week.map(it => new Date(it.year, it.month - 1, it.day));
+        const wStart = wDates[0], wEnd = wDates[6];
+
+        // 이번 주에 걸치는 막대 조각 계산
+        const segs = items.filter(it => it.start <= wEnd && it.end >= wStart).map(it => {
+          const s0 = it.start < wStart ? 0 : Math.round((it.start - wStart) / 86400000);
+          const e0 = it.end > wEnd ? 6 : Math.round((it.end - wStart) / 86400000);
+          return { it: it, s: s0, e: e0, contL: it.start < wStart, contR: it.end > wEnd };
+        }).sort((a, b) => a.s - b.s || (b.e - b.s) - (a.e - a.s));
+
+        // 겹치지 않게 줄(lane) 배정
+        const laneEnds = [];
+        segs.forEach(sg => {
+          let lane = laneEnds.findIndex(end => end < sg.s);
+          if (lane === -1) { lane = laneEnds.length; laneEnds.push(sg.e); } else laneEnds[lane] = sg.e;
+          sg.lane = lane;
+        });
+        const lanes = laneEnds.length;
+
+        const row = document.createElement("div");
+        row.className = "week-row";
+        row.style.gridTemplateRows = `24px ${lanes ? `repeat(${lanes}, auto)` : ""} minmax(6px, 1fr)`;
+
+        // 날짜 칸 (배경) + 날짜별 진행 중 편집 건수 신호등
+        week.forEach((item, i) => {
+          const load = segs.filter(sg => sg.s <= i && sg.e >= i).length;
+          let statusClass = "", light = '<span class="traffic-dot green">🟢</span>';
+          if (load >= 1 && load <= 2) { statusClass = " status-yellow"; light = '<span class="traffic-dot yellow">🟡</span>'; }
+          else if (load >= 3) { statusClass = " status-red"; light = '<span class="traffic-dot red">🔴</span>'; }
+          const cell = document.createElement("div");
+          cell.className = "day-card" + (item.isCurrentMonth ? "" : " other-month") + statusClass;
+          cell.style.gridColumn = `${i + 1}`;
+          cell.style.gridRow = `1 / span ${lanes + 2}`;
+          cell.innerHTML = `<div class="day-number-row"><span class="day-number">${item.displayDate}</span>${item.isCurrentMonth ? light : ""}</div>`;
+          row.appendChild(cell);
+        });
+
+        // 막대
+        segs.forEach(sg => {
+          const { r, kind, start, end } = sg.it;
+          const dc = deptClassOf(r.dept);
+          const bar = document.createElement("div");
+          bar.className = `edit-bar ${dc.cls}${sg.contL ? " cont-left" : ""}${sg.contR ? " cont-right" : ""}`;
+          bar.style.gridColumn = `${sg.s + 1} / ${sg.e + 2}`;
+          bar.style.gridRow = `${sg.lane + 2}`;
+          const endLabel = kind === "finish" ? "✅완료" : "🎯마감";
+          bar.title = `${r.dept} · ${r.project}\n편집 기간: ${fmtMD(start)} ~ ${fmtMD(end)} (${kind === "finish" ? "영상팀 예상 완료일" : "희망 마감일 · 예상 완료일 미정"})\n클릭하면 의뢰 상세 내용을 엽니다`;
+          bar.innerHTML = `${sg.contL ? "◂ " : ""}${esc(dc.badge)} ${esc(r.project)}${sg.contR ? "" : `<span class="end-mark">${endLabel}</span>`}`;
+          bar.onclick = () => openDetailModal(r.idx);
+          row.appendChild(bar);
+        });
+
+        grid.appendChild(row);
+      }
+    }
+
+    function getCalendarEvents(item) {
+      return (gData.requests || []).map(r => {
+        if (!r.status || r.status.includes("대기") || r.status.includes("반려")) return null;
+        let p = null, kind = "shoot";
+        if (calendarMode === "shoot") {
+          p = parseDateParts(r.shootDate);
+        } else {
+          if (/촬영만|촬영 만/.test(r.workScope || "")) return null;
+          const es = getEditSchedule(r);
+          if (es) { p = es.parts; kind = es.kind; }
+        }
+        if (!p || p.year !== item.year || p.month !== item.month || p.day !== item.day) return null;
+        return { r: r, kind: kind };
+      }).filter(Boolean);
+    }
+
     function renderCalendar() {
       const grid = document.getElementById("calDaysGrid");
       if (!grid) return;
@@ -1704,14 +1867,12 @@
       const targetMonth = (activeMonthMode === "current") ? curMonth : nextMonth;
       const days = generateMonthDays(targetYear, targetMonth);
 
+      grid.classList.remove("edit-mode");
+      if (calendarMode === "edit") { renderEditCalendar(grid, days); return; }
+
       days.forEach(item => {
         const cell = document.createElement("div");
-
-        const events = (gData.requests || []).filter(r => {
-          if (!r.status || r.status.includes("대기") || r.status.includes("반려")) return false;
-          const p = parseDateParts(r.shootDate);
-          return p && p.year === item.year && p.month === item.month && p.day === item.day;
-        });
+        const events = getCalendarEvents(item);
 
         const evCount = events.length;
         let statusClass = "";
@@ -1728,7 +1889,7 @@
         cell.className = "day-card" + (item.isCurrentMonth ? "" : " other-month") + statusClass;
         let evsHtml = "";
 
-        events.forEach(ev => {
+        events.forEach(({ r: ev, kind }) => {
           let cls = "marketing";
           let badgeText = `[${ev.dept.slice(0, 2)}]`;
 
@@ -1738,7 +1899,11 @@
           else if (ev.dept.includes("전략")) { cls = "strategy"; }
           else if (ev.dept.includes("퍼포")) { cls = "perf"; }
 
-          evsHtml += `<div class="event-chip ${cls}" onclick="openDetailModal(${ev.idx})" title="클릭하면 의뢰 상세 내용을 엽니다">${badgeText} ${ev.project}</div>`;
+          let kindHtml = "", tip = "클릭하면 의뢰 상세 내용을 엽니다";
+          if (kind === "finish") { kindHtml = '<span class="ev-kind">✅완료</span>'; tip = "영상팀 예상 완료일 · " + tip; }
+          else if (kind === "deadline") { kindHtml = '<span class="ev-kind">🎯마감</span>'; tip = "희망 마감일 (예상 완료일 미정) · " + tip; }
+
+          evsHtml += `<div class="event-chip ${cls}" onclick="openDetailModal(${ev.idx})" title="${tip}">${kindHtml}${esc(badgeText)} ${esc(ev.project)}</div>`;
         });
 
         cell.innerHTML = `

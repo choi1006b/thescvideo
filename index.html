@@ -1241,12 +1241,39 @@
         });
       });
 
+      numberDuplicateProjects();
       const badge = document.getElementById("reqBadge");
       if (badge) badge.innerText = gData.requests.filter(r => !isHiddenFromList(r)).length;
       renderInbox();
       renderTickets();
       renderCalendar();
     };
+
+    // 🔢 같은 프로젝트명이 여러 건이면 시트 순서대로 ①②③ 번호를 붙여 구분
+    function numberDuplicateProjects() {
+      const groups = {};
+      gData.requests.forEach(r => {
+        const key = String(r.project || "").trim();
+        (groups[key] = groups[key] || []).push(r);
+      });
+      Object.values(groups).forEach(list => {
+        list.sort((a, b) => a.row - b.row);
+        list.forEach((r, i) => {
+          r.dupNo = list.length > 1 ? i + 1 : 0;
+          r.dupTotal = list.length;
+        });
+      });
+    }
+    const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+    function dupMark(r) { return r && r.dupNo ? (CIRCLED[r.dupNo - 1] || `#${r.dupNo}`) : ""; }
+    // 화면 표시용 이름 (예: 솔린의원②) — 시트로 보내는 값에는 쓰지 않음
+    function displayName(r) { return r ? `${r.project}${dupMark(r)}` : ""; }
+    // 같은 이름 구분용 설명 (유형 · 접수일 · 촬영일)
+    function dupHint(r) {
+      if (!r || !r.dupNo) return "";
+      const ts = parseDateParts(r.timestamp);
+      return `같은 프로젝트 ${r.dupTotal}건 중 ${r.dupNo}번째 · ${r.videoType}${r.workScope ? " / " + r.workScope : ""} · 접수 ${ts ? ts.month + "/" + ts.day : "-"}${r.shootDate !== "-" ? " · 촬영 " + r.shootDate : ""}`;
+    }
 
     function renderInbox() {
       const inboxContainer = document.getElementById("videoTeamInbox");
@@ -1278,9 +1305,9 @@
             <div class="inbox-card-top">
               <div>
                 <div class="inbox-dept">${esc(r.dept)} · ${esc(r.applicant)}</div>
-                <div class="inbox-proj">${esc(r.project)} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
+                <div class="inbox-proj" title="${esc(dupHint(r))}">${esc(displayName(r))} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
               </div>
-              ${conflict ? `<span class="conflict-badge">🚨 일정 중복 (${esc(conflict.project)})</span>` : ''}
+              ${conflict ? `<span class="conflict-badge">🚨 일정 중복 (${esc(displayName(conflict))})</span>` : ''}
             </div>
             <div class="inbox-info-grid">
               <div>📅 <strong>촬영희망:</strong> ${esc(r.shootDate)} (${esc(r.timeSlot)})</div>
@@ -1302,7 +1329,7 @@
       const r = gData.requests[reqIndex];
       if (!r) return;
 
-      const pin = prompt(`🔒 [${r.project}] 건을 수락하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      const pin = prompt(`🔒 [${displayName(r)}] 건을 수락하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
       if (pin === null) return;
       if (pin !== ADMIN_PIN) {
         alert("❌ 관리자 PIN 번호가 일치하지 않습니다. 승인 권한이 없습니다.");
@@ -1322,14 +1349,14 @@
       const r = gData.requests[reqIndex];
       if (!r) return;
 
-      const pin = prompt(`🔒 [${r.project}] 건을 반려하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      const pin = prompt(`🔒 [${displayName(r)}] 건을 반려하시겠습니까?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
       if (pin === null) return;
       if (pin !== ADMIN_PIN) {
         alert("❌ 관리자 PIN 번호가 일치하지 않습니다. 반려 권한이 없습니다.");
         return;
       }
 
-      const reason = prompt(`[${r.project}] 반려 사유를 입력하세요:`, "일정 조율 불가");
+      const reason = prompt(`[${displayName(r)}] 반려 사유를 입력하세요:`, "일정 조율 불가");
       if (reason === null) return;
 
       const targetRow = r.row;
@@ -1351,7 +1378,7 @@
       document.getElementById("editRowNumber").value = r.row;
       document.getElementById("editProjectRaw").value = r.project;
       document.getElementById("editApplicantRaw").value = r.applicant;
-      document.getElementById("editProjectTitle").value = `[${r.dept}] ${r.project}`;
+      document.getElementById("editProjectTitle").value = `[${r.dept}] ${displayName(r)}`;
       document.getElementById("editNewDate").value = (r.shootDate && r.shootDate !== "-") ? r.shootDate : "";
       document.getElementById("editTeamFinish").value = (r.teamFinish && r.teamFinish !== "-") ? r.teamFinish : "";
       document.getElementById("editNewPlace").value = (r.shootPlace && r.shootPlace !== "-") ? r.shootPlace : "";
@@ -1456,7 +1483,7 @@
     function setRequestHidden(idx, hide) {
       const r = gData.requests[idx];
       if (!r) return;
-      const pin = prompt(`🔒 [${r.project}] 건을 전체 신청내역에서 ${hide ? "숨기시겠습니까" : "다시 보이게 하시겠습니까"}?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
+      const pin = prompt(`🔒 [${displayName(r)}] 건을 전체 신청내역에서 ${hide ? "숨기시겠습니까" : "다시 보이게 하시겠습니까"}?\n영상팀 관리자 PIN (4자리)을 입력하세요:`);
       if (pin === null) return;
       if (pin !== ADMIN_PIN) { alert("❌ 관리자 PIN 번호가 일치하지 않습니다."); return; }
 
@@ -1555,7 +1582,7 @@
                 <span class="status-chip ${isPending ? 'wait' : 'success'}">${esc(r.status)}</span>${past ? '<span class="past-chip">지난 일정</span>' : ''}${manualHidden ? '<span class="past-chip">🙈 숨김</span>' : ''}
               </span>
             </div>
-            <div class="ticket-proj">${esc(r.project)} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
+            <div class="ticket-proj" title="${esc(dupHint(r))}">${esc(displayName(r))} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
             <div class="ticket-body">
               <div class="ticket-field"><span class="ticket-field-label">🎬 영상 유형</span><span class="ticket-field-val" style="color:var(--sc-cyan);">${esc(r.videoType)}</span></div>
               <div class="ticket-field"><span class="ticket-field-label">📅 촬영 일시</span><span class="ticket-field-val" style="color:#38BDF8;">${esc(r.shootDate)} (${esc(r.timeSlot)})</span></div>
@@ -1599,7 +1626,7 @@
       if (!r) return;
       detailReqIdx = idx;
 
-      document.getElementById("detailTitle").innerText = `📋 [${r.dept}] ${r.project}`;
+      document.getElementById("detailTitle").innerText = `📋 [${r.dept}] ${displayName(r)}`;
 
       const meta = [
         ["신청자", r.applicant], ["진행 범위", r.workScope || "-"], ["영상 유형", r.videoType],
@@ -1621,6 +1648,7 @@
       const fileHtml = (fVal && fVal !== "-") ? `<div class="detail-section-body">${linkify(fVal)}</div>` : '<div class="detail-empty">없음</div>';
 
       document.getElementById("detailPaneInfo").innerHTML = `
+        ${r.dupNo ? `<div style="font-size:12px; color:#FBBF24; background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:7px 10px; margin-bottom:10px;">🔢 ${esc(dupHint(r))}</div>` : ""}
         <div class="detail-meta-grid">${meta}</div>
         ${detailSection("🎯 스크립트 제작 시 필수 내용 · 필수 컷 (소구점 포인트)", r.scriptReq ? `<div class="detail-section-body">${linkify(r.scriptReq)}</div>` : '<div class="detail-empty">작성된 내용이 없습니다.</div>', "highlight-usp")}
         ${detailSection("📝 기획 개요", r.plan ? `<div class="detail-section-body">${linkify(r.plan)}</div>` : '<div class="detail-empty">작성된 내용이 없습니다.</div>')}
@@ -1833,8 +1861,8 @@
           bar.style.gridColumn = `${sg.s + 1} / ${sg.e + 2}`;
           bar.style.gridRow = `${sg.lane + 2}`;
           const endLabel = kind === "finish" ? "✅완료" : "🎯마감";
-          bar.title = `${r.dept} · ${r.project}\n편집 기간: ${fmtMD(start)} ~ ${fmtMD(end)} (${kind === "finish" ? "영상팀 예상 완료일" : "희망 마감일 · 예상 완료일 미정"})\n클릭하면 의뢰 상세 내용을 엽니다`;
-          bar.innerHTML = `${sg.contL ? "◂ " : ""}${esc(dc.badge)} ${esc(r.project)}${sg.contR ? "" : `<span class="end-mark">${endLabel}</span>`}`;
+          bar.title = `${r.dept} · ${displayName(r)}${r.dupNo ? "\n" + dupHint(r) : ""}\n편집 기간: ${fmtMD(start)} ~ ${fmtMD(end)} (${kind === "finish" ? "영상팀 예상 완료일" : "희망 마감일 · 예상 완료일 미정"})\n클릭하면 의뢰 상세 내용을 엽니다`;
+          bar.innerHTML = `${sg.contL ? "◂ " : ""}${esc(dc.badge)} ${esc(displayName(r))}${sg.contR ? "" : `<span class="end-mark">${endLabel}</span>`}`;
           bar.onclick = () => openDetailModal(r.idx);
           row.appendChild(bar);
         });
@@ -1903,7 +1931,7 @@
           if (kind === "finish") { kindHtml = '<span class="ev-kind">✅완료</span>'; tip = "영상팀 예상 완료일 · " + tip; }
           else if (kind === "deadline") { kindHtml = '<span class="ev-kind">🎯마감</span>'; tip = "희망 마감일 (예상 완료일 미정) · " + tip; }
 
-          evsHtml += `<div class="event-chip ${cls}" onclick="openDetailModal(${ev.idx})" title="${tip}">${kindHtml}${esc(badgeText)} ${esc(ev.project)}</div>`;
+          evsHtml += `<div class="event-chip ${cls}" onclick="openDetailModal(${ev.idx})" title="${esc((ev.dupNo ? dupHint(ev) + " · " : "") + tip)}">${kindHtml}${esc(badgeText)} ${esc(displayName(ev))}</div>`;
         });
 
         cell.innerHTML = `

@@ -1604,7 +1604,8 @@
 
     function prefillAutoPlan(r) {
       const planFirst = (r.plan || "").split("\n").map(l => l.trim()).filter(l => l && !/^https?:\/\//.test(l) && !/^-+$/.test(l))[0] || "";
-      const topic = [r.project !== "-" ? r.project : "", planFirst.replace(URL_RE, "").replace(/[\/\s]+$/, "")].filter(Boolean).join(" - ");
+      const planClean = planFirst.replace(URL_RE, "").replace(/^(?:[\s\-–—•*·]+|\d+[.)]\s*)+/, "").replace(/[\/\s]+$/, "").trim();
+      const topic = [r.project !== "-" ? r.project : "", planClean].filter(Boolean).join(" - ");
       const uspLines = (r.scriptReq || "").split("\n").map(l => l.trim()).filter(Boolean);
       const refs = extractUrls(r.refLink).concat(extractUrls(r.plan + "\n" + r.scriptReq));
 
@@ -1635,16 +1636,14 @@
       const btn = document.getElementById("btnAutoPlan");
       const wrap = document.getElementById("apResultWrap");
       const body = document.getElementById("apResultBody");
-      btn.disabled = true; btn.innerText = "⏳ 구성안 작성 중...";
+      btn.disabled = true; btn.innerText = "⏳ AI와 연결 중입니다...";
       wrap.style.display = "block";
-      body.innerHTML = '<div style="text-align:center; padding:30px; color:var(--sc-cyan); font-weight:700;">⚡ 신청서 내용을 바탕으로 구성안을 작성하고 있습니다...</div>';
 
       if (r) Object.assign(params, { videoType: r.videoType, workScope: r.workScope, cast: r.cast, place: r.shootPlace !== "-" ? r.shootPlace : "" });
       params.noCache = btn.dataset.generated === "1"; // [다시 제작하기]는 캐시 무시하고 새로 생성
-      const { data, model, secs, error } = await requestAiScript(params);
-      renderAiOutput(params.topic, params.target, data, model, { body: body, title: document.getElementById("apResultTitle"), secs: secs, error: error });
-      btn.dataset.generated = "1";
-      btn.disabled = false; btn.innerText = "🔄 다시 제작하기";
+      const ok = await runAiScript(params, { body: body, title: document.getElementById("apResultTitle"), retryFn: "runAutoPlanForRequest()" });
+      if (ok) btn.dataset.generated = "1";
+      btn.disabled = false; btn.innerText = ok ? "🔄 다시 제작하기" : "✨ 이 의뢰 내용으로 구성안 자동 제작";
     }
 
     // 자동 구성안 입력값을 AI 기획 탭으로 넘겨서 이어서 수정
@@ -2036,22 +2035,14 @@
     }
 
     // ── ✨ AI 트렌드 픽 & 카탈로그 팝업 ──
-    function generateDynamicDermaTrends() {
-      const now = new Date();
-      const m = now.getMonth() + 1;
-      const d = now.getDate();
-      const todayTag = `${m}월 ${d}일`;
-      const season = (m >= 9 && m <= 11) ? "가을 환절기" : (m === 12 || m <= 2) ? "겨울철" : "봄 시즌";
-
-      const pool = [
-        { cat: "리프팅", title: `🔥 [${todayTag} 릴스 급상승] [울쎄라] vs [써마지] vs [티타늄], 내 얼굴형엔 뭐가 정답일까?`, topic: `${todayTag} 기준 울쎄라·써마지·티타늄 리프팅 얼굴형별 비교`, target: "처진 살과 탄력 저하가 고민인 2040 여성 및 시술 입문자", usp: "1. 땅콩형 얼굴·볼패임 유무에 따른 장비 선택 기준\n2. 초음파와 고주파 타겟층 차이 30초 요약\n3. 수면마취 및 통증 솔직 비교", format: "shortform", tone: "trendy" },
-        { cat: "스킨부스터", title: `🍂 [${season} 필독] 화장 들뜸·속건조 끝내는 스킨부스터 3대장 ([리쥬란]·[쥬베룩]·[물광])`, topic: `${season} 피부 장벽 복구 & 스킨부스터 3종 전격 비교`, target: "찬바람 불면서 화장 들뜸과 속건조가 심해진 2030 직장인", usp: "1. 수분 충전 vs 콜라겐 생성 vs 피부 재생 목적별 추천\n2. 통증 줄이는 인젝터 팁\n3. 엠보싱 자국 회복 기간", format: "shortform", tone: "trust" },
-        { cat: "인터뷰", title: `💡 [원장님 솔직 토크] 피부과 의사가 분기마다 제 얼굴에 직접 받는 관리 루틴`, topic: "피부과 원장님이 직접 받는 분기별 셀프 시너지 관리 루틴", target: "과잉 진료 없이 효과 확실한 시술 조합을 찾는 뷰티 고관여자", usp: "1. 레이저+스킨부스터 시너지 극대화 조합\n2. 시술 후 효과 2배 늘리는 홈케어 팁", format: "interview", tone: "trust" },
-        { cat: "모공/흉터", title: `⚡ [모공/흉터 종결] 나비존 세로 모공 vs 패인 흉터, 돈 안 날리는 시술 순서!`, topic: "나비존 모공 축소 & 요철 흉터 치료 로드맵", target: "프라이머로도 안 가려지는 탄력/피지 모공 고민러", usp: "1. 피지 과다형 둥근 모공 vs 탄력 저하형 세로 모공 구별법\n2. [포텐자]·[쥬베룩 볼륨] 적정 주기 설명", format: "shortform", tone: "trendy" },
-        { cat: "윤곽/라인", title: `✨ [${todayTag} 트렌드] 이중턱·심부볼 삭제! [인모드] vs [슈링크] vs [윤곽주사] 솔직 비교`, topic: "이중턱·심부볼 유형별 윤곽 라인 정리 시술 비교", target: "살이 찌지 않아도 턱선이 무너져 사진 찍기 고민인 2030", usp: "1. 지방형 이중턱 vs 탄력저하형 이중턱 자가진단법\n2. 시술별 유지기간 및 통증 솔직 비교", format: "shortform", tone: "trendy" },
-        { cat: "색소/기미", title: `🔍 [색소/잡티] 토닝 받다가 더 진해진다? [피코토닝] vs [클라리티] 구분법`, topic: "기미·주근깨·잡티 유형별 색소 레이저 선택 가이드", target: "얼룩덜룩한 피부톤과 옅은 기미로 고민하는 3040", usp: "1. 표피성 잡티와 진피성 기미 치료 차이\n2. 레이저 후 색소침착 예방 수칙", format: "interview", tone: "trust" }
-      ];
-      return pool.sort(() => Math.random() - 0.5);
+    // ⏳ "AI와 연결 중입니다" 안내 박스 (템플릿 대체 없음)
+    function aiConnectingHtml(msg, sub, retryFn) {
+      return `<div style="text-align:center; padding:36px 20px;">
+        <div style="font-size:30px; animation: pulse 1.2s infinite;">⏳</div>
+        <div style="font-size:14px; font-weight:700; color:var(--sc-cyan); margin-top:10px;">${msg}</div>
+        ${sub ? `<div style="font-size:12px; color:var(--text-muted); margin-top:6px;">${sub}</div>` : ""}
+        ${retryFn ? `<button class="btn-action sec" style="margin-top:14px;" onclick="${retryFn}">🔄 다시 연결하기</button>` : ""}
+      </div>`;
     }
 
     function selectCatalogItem(idx) {
@@ -2061,10 +2052,10 @@
       const preview = document.getElementById("trendCatalogPreview");
       if (!preview) return;
       preview.innerHTML = `
-        <div style="font-size:14px; font-weight:700; color:#38BDF8;">${selectedCatalogItem.title}</div>
-        <div>🎯 <strong>타겟층:</strong> ${selectedCatalogItem.target || "2040 피부과 관심 고객"}</div>
-        <div>💡 <strong>기획 의도:</strong><br>${String(selectedCatalogItem.usp || "").replace(/\n/g, '<br>')}</div>
-        <div>🎬 <strong>추천 포맷:</strong> ${selectedCatalogItem.format || "shortform"} / <strong>톤:</strong> ${selectedCatalogItem.tone || "trendy"}</div>
+        <div style="font-size:14px; font-weight:700; color:#38BDF8;">${esc(selectedCatalogItem.title)}</div>
+        <div>🎯 <strong>타겟층:</strong> ${esc(selectedCatalogItem.target || "2040 피부과 관심 고객")}</div>
+        <div>💡 <strong>기획 의도:</strong><br>${esc(selectedCatalogItem.usp || "").replace(/\n/g, '<br>')}</div>
+        <div>🎬 <strong>추천 포맷:</strong> ${esc(selectedCatalogItem.format || "shortform")} / <strong>톤:</strong> ${esc(selectedCatalogItem.tone || "trendy")}</div>
       `;
       document.getElementById("btnAutoGenerate").disabled = false;
     }
@@ -2108,12 +2099,21 @@
       const list = document.getElementById("trendCatalogList");
       if (!list) return;
       list.innerHTML = "";
+      if (DERMA_TREND_TOPICS.length === 0) {
+        list.innerHTML = aiConnectingHtml("AI와 연결 중입니다...", "트렌드 픽을 불러오면 여기에 표시됩니다. 잠시 후 다시 열어 주세요.");
+        const preview = document.getElementById("trendCatalogPreview");
+        if (preview) preview.innerHTML = "";
+        const btnGen = document.getElementById("btnAutoGenerate");
+        if (btnGen) btnGen.disabled = true;
+        document.getElementById("trendModal").classList.add("active");
+        return;
+      }
       DERMA_TREND_TOPICS.forEach((item, idx) => {
         const catName = item.cat || "트렌드픽";
         list.innerHTML += `
           <div class="catalog-item ${idx === 0 ? 'active' : ''}" onclick="selectCatalogItem(${idx})">
-            <span style="font-size:10px; color:var(--sc-cyan); font-weight:700;">[${catName}]</span>
-            <div style="font-size:12.5px; font-weight:700; color:#fff; margin-top:2px;">${item.title}</div>
+            <span style="font-size:10px; color:var(--sc-cyan); font-weight:700;">[${esc(catName)}]</span>
+            <div style="font-size:12.5px; font-weight:700; color:#fff; margin-top:2px;">${esc(item.title)}</div>
           </div>
         `;
       });
@@ -2122,9 +2122,12 @@
     }
 
     // 🌐 [1/2] 구글 백엔드 프록시를 통한 트렌드 호출
-    async function fetchDailyGeminiTrends() {
-      DERMA_TREND_TOPICS = generateDynamicDermaTrends();
-      updateTrendDisplay();
+    let trendRetryTimer = null;
+    async function fetchDailyGeminiTrends(attempt) {
+      attempt = attempt || 1;
+      const ticker = document.getElementById("aiTrendTicker");
+      const badge = document.querySelector(".header-ai-trend .trend-badge");
+      if (DERMA_TREND_TOPICS.length === 0 && ticker) ticker.innerText = "⏳ AI와 연결 중입니다...";
 
       try {
         const res = await fetch(WEB_APP_URL, {
@@ -2136,15 +2139,22 @@
           const resJson = await res.json();
           if (resJson.result === "success" && Array.isArray(resJson.data) && resJson.data.length > 0) {
             DERMA_TREND_TOPICS = resJson.data;
+            curTrendIdx = 0;
             updateTrendDisplay();
-            const badge = document.querySelector(".header-ai-trend .trend-badge");
-            if (badge) badge.innerText = `✨ AI 실시간 연동됨 (${resJson.model || "Gemini"})`;
+            if (badge) badge.innerText = "✨ AI 트렌드 픽";
+            if (trendRollingTimer) clearInterval(trendRollingTimer);
+            trendRollingTimer = setInterval(nextTrendTopic, 5000);
+            return;
           }
+          if (resJson.error) console.warn("[AI 트렌드] 실패 원인:", resJson.error);
         }
-      } catch (e) {}
+      } catch (e) { console.warn("[AI 트렌드] 연결 오류:", e); }
 
-      if (trendRollingTimer) clearInterval(trendRollingTimer);
-      trendRollingTimer = setInterval(nextTrendTopic, 5000);
+      // 실패 → 템플릿 없이 '연결 중' 유지하고 자동 재시도 (5초 → 15초 → 이후 60초마다)
+      if (DERMA_TREND_TOPICS.length === 0 && ticker) ticker.innerText = "⏳ AI와 연결 중입니다...";
+      const wait = attempt === 1 ? 5000 : (attempt === 2 ? 15000 : 60000);
+      if (trendRetryTimer) clearTimeout(trendRetryTimer);
+      trendRetryTimer = setTimeout(() => fetchDailyGeminiTrends(attempt + 1), wait);
     }
 
     // 🌐 [2/2] 구글 백엔드 프록시를 통한 맞춤 콘티 생성
@@ -2162,120 +2172,76 @@
       }
 
       const scriptBody = document.getElementById("aiScriptBody");
-      scriptBody.innerHTML = `
-        <div style="text-align:center; padding:40px 20px;">
-          <div style="font-size:32px; animation: pulse 1s infinite;">⚡</div>
-          <div style="font-size:14px; font-weight:700; color:var(--sc-cyan); margin-top:10px;">The SC AI 엔진이 맞춤 연출 콘티를 실시간 집필 중입니다...</div>
-          <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">카메라 화각(35mm/50mm), 조명 세팅, 실제 대사 전문 및 PD 연출 가이드를 작성하고 있습니다.</div>
-        </div>
-      `;
-
       const resultCard = document.getElementById("aiResultCard");
       if (resultCard && window.innerWidth <= 900) {
         resultCard.scrollIntoView({ behavior: "smooth", block: "start" });
       }
 
       const refUrl = document.getElementById("aiRefUrl") ? document.getElementById("aiRefUrl").value.trim() : "";
-      const { data, model, secs, error } = await requestAiScript({ format, topic, target, usp, tone, refUrl });
-      renderAiOutput(topic, target, data, model, { secs: secs, error: error });
+      const btn = document.getElementById("btnGenerateScript");
+      if (btn) btn.disabled = true;
+      await runAiScript({ format, topic, target, usp, tone, refUrl }, {
+        body: scriptBody, title: document.getElementById("aiResultTitle"), retryFn: "generateAiScript()"
+      });
+      if (btn) btn.disabled = false;
     }
 
-    // Apps Script(Gemini) 백엔드로 콘티 요청 → 실패 시 내장 템플릿으로 대체
-    // ※ refUrl / plan 값은 백엔드가 지원할 때만 반영됩니다 (미지원이면 무시됨)
-    async function requestAiScript(p) {
-      const ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
-      const timer = ctrl ? setTimeout(() => ctrl.abort(), 90000) : null; // 90초 넘으면 템플릿으로 대체
+    // 구성안 생성 공통: '연결 중' 표시 → 성공 시 출력 / 실패 시 '연결 중' + 다시 연결하기 (템플릿 없음)
+    async function runAiScript(params, els) {
+      els.body.innerHTML = aiConnectingHtml("AI와 연결 중입니다...", "보통 10초 안팎 걸립니다.");
+      const result = await requestAiScript(params, n => {
+        els.body.innerHTML = aiConnectingHtml("AI와 연결 중입니다...", `응답이 늦어 다시 연결하고 있습니다 (${n}/3)`);
+      });
+      if (result.data) {
+        renderAiOutput(params.topic, params.target, result.data, result.model, { body: els.body, title: els.title, secs: result.secs });
+        return true;
+      }
+      els.body.innerHTML = aiConnectingHtml("AI와 연결 중입니다...",
+        "지금 AI 서버 응답이 지연되고 있습니다. 잠시 후 다시 연결해 주세요." +
+        (result.error ? `<br><span style="font-size:11px; opacity:0.75;">(${esc(String(result.error).slice(0, 140))})</span>` : ""),
+        els.retryFn);
+      return false;
+    }
+
+    // Apps Script(Gemini) 백엔드로 콘티 요청 — 실패하면 최대 3번까지 자동 재시도
+    async function requestAiScript(p, onRetry) {
       const started = Date.now();
       let errMsg = "";
-      try {
-        const res = await fetch(WEB_APP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          signal: ctrl ? ctrl.signal : undefined,
-          body: JSON.stringify({
-            action: "generateAiScript",
-            format: p.format, topic: p.topic, target: p.target || "", usp: p.usp || "", tone: p.tone,
-            refUrl: p.refUrl || "", plan: p.plan || "",
-            videoType: p.videoType || "", workScope: p.workScope || "", cast: p.cast || "", place: p.place || "",
-            noCache: !!p.noCache
-          })
-        });
-        if (res.ok) {
-          const resJson = await res.json();
-          if (resJson.result === "success" && resJson.data && resJson.data.scenes) {
-            if (timer) clearTimeout(timer);
-            return { data: resJson.data, model: resJson.model || "Gemini", secs: ((Date.now() - started) / 1000).toFixed(1) };
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        if (attempt > 1 && onRetry) onRetry(attempt);
+        const ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 60000) : null;
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            signal: ctrl ? ctrl.signal : undefined,
+            body: JSON.stringify({
+              action: "generateAiScript",
+              format: p.format, topic: p.topic, target: p.target || "", usp: p.usp || "", tone: p.tone,
+              refUrl: p.refUrl || "", plan: p.plan || "",
+              videoType: p.videoType || "", workScope: p.workScope || "", cast: p.cast || "", place: p.place || "",
+              noCache: !!p.noCache
+            })
+          });
+          if (timer) clearTimeout(timer);
+          if (res.ok) {
+            const resJson = await res.json();
+            if (resJson.result === "success" && resJson.data && resJson.data.scenes) {
+              return { data: resJson.data, model: resJson.model || "Gemini", secs: ((Date.now() - started) / 1000).toFixed(1) };
+            }
+            errMsg = resJson.error || "AI 응답 형식 오류";
+          } else {
+            errMsg = "HTTP " + res.status;
           }
-          errMsg = resJson.error || "";
+        } catch (e) {
+          if (timer) clearTimeout(timer);
+          errMsg = (e && e.name === "AbortError") ? "응답 시간 초과(60초)" : String(e);
         }
-      } catch (e) { errMsg = (e && e.name === "AbortError") ? "응답 시간 초과(90초)" : String(e); }
-      if (timer) clearTimeout(timer);
-      if (errMsg) console.warn("[AI 구성안] 실패 원인:", errMsg);
-      return { data: buildHighDetailProductionScript(p.format, p.topic, p.target, p.usp, p.tone), model: null, error: errMsg };
-    }
-
-    // 🎬 예비용 초고밀도 실무 큐시트 조립 엔진
-    function buildHighDetailProductionScript(format, topic, target, usp, tone) {
-      let cleanTopic = topic.replace(/\?$/g, "").trim();
-      const targetText = target || "관심 시청자 및 잠재 고객층";
-      const uspLines = (usp || "").split("\n").map(l => l.trim()).filter(Boolean);
-      let point1 = (uspLines[0] || `${cleanTopic}의 핵심 원리와 필수 체크포인트`).replace(/^[\d\.\-\s\*]+/, "");
-      let point2 = (uspLines[1] || "상황별 주의사항 및 실패 없는 선택 기준").replace(/^[\d\.\-\s\*]+/, "");
-      let point3 = (uspLines[2] || "시술/진행 후 효과를 극대화하는 실전 가이드").replace(/^[\d\.\-\s\*]+/, "");
-
-      let bgmTone = "트렌디한 미니멀 테크 하우스 (124 BPM 빠른 템포)";
-      if (tone === "trust") bgmTone = "차분하고 지적인 앰비언트 로파이 (어쿠스틱 피아노 톤)";
-      else if (tone === "funny") bgmTone = "경쾌하고 유쾌한 펑키 리듬 (코믹 효과음 포인트)";
-
-      return {
-        projectSummary: `[프로덕션 콘티] ${cleanTopic}`,
-        runTime: format === "interview" ? "2분 30초 (인터뷰)" : (format === "longform" ? "5분 (기획 영상)" : "35초 (숏폼 최적화)"),
-        bgm: bgmTone,
-        toneText: `${tone} 톤앤매너`,
-        targetAudience: targetText,
-        scenes: [
-          {
-            num: "Scene 1",
-            time: "00~03초 (후킹)",
-            video: `[세로 9:16 / 35mm 스냅 줌인] 원장이 카메라 렌즈를 정면으로 콕 짚으며 빠른 줌인 연출.\n[자막] 화면 중앙에 옐로우-블랙 대비 볼드 타이포그래피 급속 팝업.\n[조명] 45도 키라이트 + 소프트 림라이트로 입체감 강조.`,
-            audio: `"${cleanTopic}, 아직도 아무 생각 없이 남들 따라 시작하시나요? 30초 만에 돈 날리는 이유 딱 짚어드립니다."`,
-            sub: `🚨 ${cleanTopic}, 남들 따라 하면 100% 후회합니다!`,
-            tip: "초반 1.5초 내 이탈 방지를 위해 볼드 텍스트 팝업과 스냅 줌 전환을 강하게 연출할 것."
-          },
-          {
-            num: "Scene 2",
-            time: "04~12초 (원리 분석)",
-            video: `[2분할 세로 화면 / 50mm 안정적 앵글] 상단: 원장의 빠른 제스처 설명 / 하단: 핵심 원리 3D 그래픽 컷.\n${point1}을 직관적으로 보여주는 텍스트 바와 화살표 그래픽 오버레이.`,
-            audio: `"첫 번째, ${point1}! 내 상태와 정확한 목적을 모른 채 들어가면 효과는커녕 시간과 돈만 날립니다."`,
-            sub: `📌 POINT 1. ${point1}`,
-            tip: "어려운 전문 용어는 일반 시청자가 3초 안에 직관적으로 이해할 수 있도록 비유적 그래픽 자막 매칭."
-          },
-          {
-            num: "Scene 3",
-            time: "13~21초 (비교/주의점)",
-            video: `[좌우 스와이프 트랜지션 / 50mm 단초점] '잘못된 예시(X)' vs '올바른 예시(O)' 대비 화면.\n${point2}에 대한 디테일 인서트 컷 및 장비/자료 클로즈업.`,
-            audio: `"두 번째, ${point2}! 본인의 타입에 따라 플랜을 완전히 다르게 계산해서 접근해야 합니다."`,
-            sub: `💡 POINT 2. ${point2}`,
-            tip: "자극적인 비포/애프터 대신 원리와 기준에 집중하여 의료 심의 및 신뢰도 리스크 방어."
-          },
-          {
-            num: "Scene 4",
-            time: "22~28초 (실전 솔루션)",
-            video: `[원장 핸드헬드 앵글 / 35mm 현장감] 원장이 차트를 덮으며 신뢰감 있는 미소로 솔루션 요약.\n화면 하단에 ${point3} 1줄 요약 박스 고정 노출.`,
-            audio: `"마지막 세 번째! ${point3}. 이 기준만 딱 기억하고 상담 가셔도 절대 실패 안 합니다."`,
-            sub: `✨ 한 줄 결론: ${point3}`,
-            tip: "말끝을 단호하게 끊어 컷 편집의 리듬감과 설득력을 끝까지 유지."
-          },
-          {
-            num: "Scene 5",
-            time: "29~35초 (엔딩)",
-            video: `[엔딩 시그니처 컷] 공식 병원 로고와 함께 우측 하단 '북마크 저장 & 공유' 애니메이션 오버레이.`,
-            audio: `"상담 가기 전에 꼭 꺼내보세요! 지금 저장해 두시고 주변 친구한테도 공유해 주세요!"`,
-            sub: `📌 가기 전 필독! 저장 & 공유해 두고 꺼내보세요`,
-            tip: "알고리즘 추천의 가장 중요한 핵심 지표인 '저장(북마크)' 유도 콜투액션(CTA) 필수 삽입."
-          }
-        ]
-      };
+        console.warn(`[AI 구성안] ${attempt}차 시도 실패:`, errMsg);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 2000));
+      }
+      return { data: null, model: null, error: errMsg };
     }
 
     function renderAiOutput(topic, target, content, modelName, targetEls) {
@@ -2284,12 +2250,7 @@
       titleEl.innerText = `📋 [${topic}] 프로덕션 세부 연출 큐시트`;
 
       let badgeHtml = "";
-      if (!modelName) {
-        badgeHtml = `<div style="background:rgba(245, 158, 11, 0.1); border:1px solid rgba(245, 158, 11, 0.35); color:#FBBF24; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:14px;">
-          ⚠️ AI 서버 응답이 없어 기본 템플릿으로 작성된 구성안입니다. 내용을 꼭 검토·수정해 주세요.
-          ${(targetEls && targetEls.error) ? `<div style="font-weight:500; font-size:11px; margin-top:4px; opacity:0.85;">원인: ${esc(String(targetEls.error).slice(0, 160))}</div>` : ""}
-        </div>`;
-      } else {
+      if (modelName) {
         badgeHtml = `<div style="background:rgba(16, 185, 129, 0.15); border:1px solid rgba(16, 185, 129, 0.4); color:#34D399; padding:8px 14px; border-radius:8px; font-size:12px; font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:6px;">
           <span>🟢 Gemini AI (${esc(modelName)}) 생성 완료${(targetEls && targetEls.secs) ? ` · ${targetEls.secs}초` : ""}</span>
         </div>`;

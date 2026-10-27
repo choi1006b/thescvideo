@@ -158,6 +158,11 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 
     .cal-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .edit-group-title { font-size: 12px; font-weight: 700; color: #38BDF8; margin: 12px 0 6px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+    .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+    .edit-grid .full { grid-column: 1 / -1; }
+    .edit-grid label, .edit-label { font-size: 11px; color: var(--text-muted); }
+    @media (max-width: 600px) { .edit-grid { grid-template-columns: 1fr; } }
     .cal-mode-tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
     .cal-mode-btn { background: var(--sc-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
     .cal-mode-btn.active { background: var(--sc-surface-elevated); color: #fff; border-color: rgba(0, 163, 224, 0.5); box-shadow: 0 0 0 1px rgba(0, 163, 224, 0.25) inset; }
@@ -854,54 +859,72 @@
   </div>
 
   <div class="modal-backdrop" id="editModal">
-    <div class="modal-dialog" style="max-width:460px;">
+    <div class="modal-dialog" style="max-width:520px; max-height:90vh; overflow-y:auto;">
       <div class="modal-top-bar">
-        <div class="modal-title">✏️ 의뢰 내용 및 기획안 파일 수정</div>
+        <div class="modal-title">✏️ 의뢰 정보 수정</div>
         <button class="modal-close-btn" onclick="closeEditModal()">✕</button>
       </div>
 
       <input type="hidden" id="editRowNumber">
       <input type="hidden" id="editProjectRaw">
       <input type="hidden" id="editApplicantRaw">
-      
+
       <div style="margin-bottom:10px;">
         <label style="font-size:11px; color:var(--text-muted);">프로젝트 명칭</label>
         <input type="text" id="editProjectTitle" class="form-control" readonly style="opacity:0.6;">
       </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px; color:var(--text-muted);">촬영 희망일자 및 일시</label>
-        <input type="text" id="editNewDate" class="form-control" placeholder="예: 2026. 10. 28 오후 2:00">
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px; color:var(--text-muted);">제작팀 완료 예상일</label>
-        <input type="text" id="editTeamFinish" class="form-control" placeholder="예: 2026. 11. 05">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="font-size:11px; color:var(--text-muted);">촬영 장소</label>
-        <input type="text" id="editNewPlace" class="form-control" placeholder="예: 파르나스 서울 3층">
+
+      <div class="edit-group-title">👤 담당 · 진행</div>
+      <div class="edit-grid">
+        <div>
+          <label>영상팀 담당자 <span style="opacity:0.7;">(여러 명이면 쉼표로)</span></label>
+          <input type="text" id="editManager" class="form-control" list="managerList" placeholder="예: 김영웅, 윤경모">
+          <datalist id="managerList"></datalist>
+        </div>
+        <div>
+          <label>영상팀 예상 완료일</label>
+          <input type="text" id="editTeamFinish" class="form-control" placeholder="예: 2026. 11. 05">
+        </div>
       </div>
 
-      <div style="background:rgba(245, 158, 11, 0.08); border:1px solid rgba(245, 158, 11, 0.35); border-radius:8px; padding:12px; margin-bottom:14px;">
-        <div style="font-size:12px; color:#FBBF24; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
-          ⚠️ 기획안 파일 업로드 시 필독 주의사항
+      <div class="edit-group-title">📅 일정 · 장소 <span style="font-weight:500; color:var(--text-muted);">— 촬영 일시·장소를 바꾸면 '재검토' 상태가 됩니다</span></div>
+      <div class="edit-grid">
+        <div>
+          <label>촬영 희망 일시</label>
+          <input type="text" id="editNewDate" class="form-control" placeholder="예: 2026. 10. 28 오후 2:00">
         </div>
-        <div style="font-size:11.5px; color:#FDE68A; line-height:1.5; margin-bottom:8px;">
-          • 새 의뢰서를 다시 작성하시면 <strong>신규 건이 중복 생성</strong>됩니다.<br>
-          • 파일 추가는 신청 시 수신한 <strong>접수 확인 이메일 본문 맨 아래의 [응답 수정]</strong> 버튼을 눌러 파일을 첨부해 주세요.<br>
-          • 파일이 제출되면 본 화면의 상태가 즉시 <strong>[📁 파일 보기 ↗]</strong>로 바뀝니다.
+        <div>
+          <label>희망 마감일</label>
+          <input type="text" id="editDeadline" class="form-control" placeholder="예: 2026. 11. 10">
         </div>
-        <div id="editCurrentFileStatus" style="font-size:11.5px; padding-top:6px; border-top:1px dashed rgba(245, 158, 11, 0.25);"></div>
+        <div class="full">
+          <label>촬영 장소</label>
+          <input type="text" id="editNewPlace" class="form-control" placeholder="예: 파르나스 서울 3층">
+        </div>
       </div>
 
-      <div style="margin-bottom:16px;">
-        <label style="font-size:11px; color:var(--text-muted);">또는 구글 드라이브 / 노션 링크 직접 입력</label>
+      <div class="edit-group-title">🔗 자료</div>
+      <div style="margin-bottom:8px;">
+        <label class="edit-label">레퍼런스 링크 <span style="opacity:0.7;">(여러 개면 줄바꿈)</span></label>
+        <textarea id="editRefLink" class="form-control" rows="2" placeholder="https://www.youtube.com/..."></textarea>
+      </div>
+      <div style="margin-bottom:6px;">
+        <label class="edit-label">기획안 파일 링크 (구글 드라이브 / 노션)</label>
         <input type="text" id="editFileUrl" class="form-control" placeholder="https://drive.google.com/...">
+        <div id="editCurrentFileStatus" style="font-size:11.5px; margin-top:4px;"></div>
       </div>
+      <div style="font-size:11px; color:#FDE68A; background:rgba(245,158,11,0.07); border:1px solid rgba(245,158,11,0.3); border-radius:6px; padding:8px 10px; margin-bottom:10px; line-height:1.5;">
+        ⚠️ 파일을 새로 첨부할 때는 의뢰서를 다시 쓰지 말고(중복 생성됨), <strong>접수 확인 메일 맨 아래 [응답 수정]</strong>으로 첨부해 주세요.
+      </div>
+
+      <div class="edit-group-title">🗒️ 비고 · 메모</div>
+      <textarea id="editMemo" class="form-control" rows="3" placeholder="영상팀 메모, 변경 이력 등" style="margin-bottom:14px;"></textarea>
 
       <button class="btn-action pri" id="btnSubmitEdit" style="width:100%; justify-content:center; padding:10px;" onclick="submitEditRequest()">
-        💾 일정/장소/링크 시트 반영
+        💾 변경한 내용만 시트에 반영
       </button>
     </div>
+  </div>
   </div>
 
  <script>
@@ -1372,6 +1395,21 @@
       sendWebhook({ action: "rejectRequest", row: targetRow, project: targetProj, applicant: targetApplicant, reason: reason }, "⛔ 관리자 인증 완료: 해당 의뢰가 반려되었습니다.");
     }
 
+    // ✏️ 의뢰 정보 수정 — 열 때의 값(원래 값)을 기억해 두고, 바뀐 칸만 시트에 보냄
+    let editOriginal = null;
+    const EDIT_FIELDS = [
+      // [입력칸 id, 서버로 보내는 이름, 원래 값 가져오기]
+      ["editManager",    "manager",    r => r.manager],
+      ["editTeamFinish", "teamFinish", r => r.teamFinish],
+      ["editNewDate",    "shootDate",  r => r.shootDate],
+      ["editDeadline",   "deadLine",   r => r.deadLine],
+      ["editNewPlace",   "shootPlace", r => r.shootPlace],
+      ["editRefLink",    "refLink",    r => r.refLink],
+      ["editFileUrl",    "fileUpload", r => r.fileUpload],
+      ["editMemo",       "memo",       r => r.memo]
+    ];
+    const cleanVal = v => { const t = String(v === null || v === undefined ? "" : v).trim(); return t === "-" ? "" : t; };
+
     function openEditModal(idx) {
       const r = gData.requests[idx];
       if (!r) return;
@@ -1379,24 +1417,25 @@
       document.getElementById("editProjectRaw").value = r.project;
       document.getElementById("editApplicantRaw").value = r.applicant;
       document.getElementById("editProjectTitle").value = `[${r.dept}] ${displayName(r)}`;
-      document.getElementById("editNewDate").value = (r.shootDate && r.shootDate !== "-") ? r.shootDate : "";
-      document.getElementById("editTeamFinish").value = (r.teamFinish && r.teamFinish !== "-") ? r.teamFinish : "";
-      document.getElementById("editNewPlace").value = (r.shootPlace && r.shootPlace !== "-") ? r.shootPlace : "";
+
+      editOriginal = {};
+      EDIT_FIELDS.forEach(([id, key, get]) => {
+        const v = cleanVal(get(r));
+        editOriginal[key] = v;
+        const el = document.getElementById(id);
+        if (el) el.value = v;
+      });
+
+      // 담당자 자동완성: 지금까지 입력된 담당자 이름들
+      const names = new Set();
+      gData.requests.forEach(x => String(x.manager || "").split(/[,，\/]/).map(n => n.trim()).filter(Boolean).forEach(n => names.add(n)));
+      document.getElementById("managerList").innerHTML = [...names].sort().map(n => `<option value="${esc(n)}">`).join("");
 
       const curFileBox = document.getElementById("editCurrentFileStatus");
-      const fVal = String(r.fileUpload || "").trim();
-      if (curFileBox) {
-        if (fVal.includes("http://") || fVal.includes("https://")) {
-          const m = fVal.match(/(https?:\/\/[^\s,]+)/);
-          const u = m ? m[1] : fVal;
-          curFileBox.innerHTML = `현재 등록된 파일: <a href="${u}" target="_blank" style="color:#38BDF8; font-weight:700; text-decoration:underline;">📁 파일 보기 ↗</a>`;
-        } else {
-          curFileBox.innerHTML = `<span style="color:var(--text-muted);">현재 등록된 기획안 파일이 없습니다.</span>`;
-        }
-      }
-
-      const fileInput = document.getElementById("editFileUrl");
-      if (fileInput) fileInput.value = (fVal.includes("http")) ? fVal : "";
+      const urls = extractUrls(r.fileUpload);
+      if (curFileBox) curFileBox.innerHTML = urls.length
+        ? `현재 등록된 파일: ${urls.map((u, i) => `<a href="${esc(u)}" target="_blank" style="color:#38BDF8; font-weight:700; text-decoration:underline;">📁 파일 ${urls.length > 1 ? i + 1 : "보기"} ↗</a>`).join(" ")}`
+        : `<span style="color:var(--text-muted);">현재 등록된 기획안 파일이 없습니다.</span>`;
 
       document.getElementById("editModal").classList.add("active");
     }
@@ -1405,28 +1444,30 @@
       document.getElementById("editModal").classList.remove("active");
     }
 
-    function submitEditRequest() {
-      const row = document.getElementById("editRowNumber").value;
-      const newDate = document.getElementById("editNewDate").value.trim();
-      const teamFinish = document.getElementById("editTeamFinish").value.trim();
-      const newPlace = document.getElementById("editNewPlace").value.trim();
-      const fileUrl = document.getElementById("editFileUrl") ? document.getElementById("editFileUrl").value.trim() : "";
+    async function submitEditRequest() {
+      if (!editOriginal) return;
+      const changes = {};
+      EDIT_FIELDS.forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        const v = el ? cleanVal(el.value) : "";
+        if (v !== editOriginal[key]) changes[key] = v;
+      });
+      const keys = Object.keys(changes);
+      if (keys.length === 0) { alert("바뀐 내용이 없습니다."); return; }
 
-      // 편집 전용 건은 촬영일이 없으므로, 네 항목 중 하나만 있어도 저장 가능
-      if (!newDate && !teamFinish && !newPlace && !fileUrl) { alert("변경할 내용을 하나 이상 입력하세요!"); return; }
+      const LABELS = { manager: "담당자", teamFinish: "예상 완료일", shootDate: "촬영 일시", deadLine: "희망 마감일", shootPlace: "촬영 장소", refLink: "레퍼런스 링크", fileUpload: "기획안 파일", memo: "비고" };
+      const willReview = ("shootDate" in changes) || ("shootPlace" in changes);
+      const cleared = keys.filter(k => changes[k] === "");
+      if (cleared.length && !confirm(`다음 칸을 비웁니다: ${cleared.map(k => LABELS[k]).join(", ")}\n계속할까요?`)) return;
 
       closeEditModal();
-      
-      sendWebhook({ 
-        action: "editRequest", 
-        row: row, 
+      await sendWebhook({
+        action: "editRequest",
+        row: document.getElementById("editRowNumber").value,
         project: document.getElementById("editProjectRaw").value,
         applicant: document.getElementById("editApplicantRaw").value,
-        newDate: newDate, 
-        teamFinish: teamFinish,
-        newPlace: newPlace, 
-        fileUrl: fileUrl 
-      }, "✅ 변경 내용(예상 완료일 포함)이 구글 시트에 즉시 반영되었습니다!");
+        changes: JSON.stringify(changes)
+      }, `✅ 시트에 반영되었습니다: ${keys.map(k => LABELS[k]).join(", ")}` + (willReview ? "\n(촬영 일시·장소가 바뀌어 '재검토' 상태로 변경됩니다)" : ""));
     }
 
     // 💡 [중복 삭제 버그 완전 해결] 단일 스크립트 호출로 중복 실행 원천 차단
@@ -1638,7 +1679,7 @@
             </div>
             <div style="display:flex; gap:6px; margin-top:4px;">
               <button class="btn-action pri" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openDetailModal(${idx})">🔍 상세 보기 · 구성안</button>
-              <button class="btn-action sec" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openEditModal(${idx})">✏️ 일정/장소 변경</button>
+              <button class="btn-action sec" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openEditModal(${idx})">✏️ 정보 수정</button>
             </div>
             ${hideBtnHtml}
             ${cancelButtonHtml(r, idx, true)}
@@ -1705,7 +1746,7 @@
         </div>` : ""}
         <div class="detail-actions">
           <button class="btn-action pri" onclick="switchDetailTab('plan')">✨ 이 의뢰로 구성안 자동 제작</button>
-          <button class="btn-action sec" onclick="closeDetailModal(); openEditModal(${idx})">✏️ 일정/장소 변경 및 기획안 업로드</button>
+          <button class="btn-action sec" onclick="closeDetailModal(); openEditModal(${idx})">✏️ 의뢰 정보 수정 (담당자·일정·자료·메모)</button>
           <button class="btn-action sec" onclick="closeDetailModal(); jumpToRequestByIndex(${idx})">📍 전체 신청내역에서 위치 보기</button>
           ${cancelButtonHtml(r, idx, false)}
         </div>

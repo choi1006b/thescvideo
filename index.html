@@ -1208,7 +1208,7 @@
 
         // 반려 건은 신청내역에서 제외
         const statusText = String(status || "");
-        if (statusText.indexOf("반려") !== -1) return;
+        if (statusText.indexOf("반려") !== -1 || statusText.indexOf("취소") !== -1) return; // 반려·취소 건 제외
 
         const planParts = [txt(r, "plan"), txt(r, "planLegacy")].filter(Boolean);
 
@@ -1479,6 +1479,46 @@
     // 목록에서 숨길 대상: 지난 촬영 일정 + 영상팀이 직접 숨긴 건 (캘린더에는 영향 없음)
     function isHiddenFromList(r) { return !!r && (r.hidden || isPastRequest(r)); }
 
+    // 🚫 의뢰 취소 가능 여부: 촬영일(없으면 희망 마감일) 기준 이틀 전까지만 가능 — 하루 전·당일·지난 일정은 불가
+    function getCancelInfo(r) {
+      const shoot = parseDateParts(r.shootDate);
+      const basisParts = shoot || parseDateParts(r.deadLine);
+      if (!basisParts) return { ok: true, label: "" };
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const diff = Math.round((dateFromParts(basisParts) - today) / 86400000);
+      const basis = `${shoot ? "촬영일" : "희망 마감일"} ${basisParts.month}/${basisParts.day}`;
+      if (diff < 0) return { ok: false, label: "지난 일정", basis };
+      if (diff === 0) return { ok: false, label: "당일", basis };
+      if (diff === 1) return { ok: false, label: "하루 전", basis };
+      return { ok: true, label: "", basis };
+    }
+
+    function cancelButtonHtml(r, idx, fullWidth) {
+      const ci = getCancelInfo(r);
+      const style = `${fullWidth ? "width:100%; " : ""}justify-content:center; font-size:11px;${fullWidth ? " margin-top:4px;" : ""}`;
+      if (!ci.ok) {
+        return `<button class="btn-action sec" style="${style} opacity:0.45; cursor:not-allowed;" disabled title="${esc(ci.basis)} 기준 하루 전·당일·지난 일정은 취소할 수 없습니다">🚫 취소 불가 (${ci.label})</button>`;
+      }
+      return `<button class="btn-action sec" style="${style} color:#FCA5A5; border-color:rgba(239,68,68,0.35);" onclick="event.stopPropagation(); cancelRequest(${idx})">🚫 의뢰 취소 (관리자 PIN)</button>`;
+    }
+
+    async function cancelRequest(idx) {
+      const r = gData.requests[idx];
+      if (!r) return;
+      const ci = getCancelInfo(r);
+      if (!ci.ok) { alert(`🚫 ${ci.basis} 기준 ${ci.label}이라 취소할 수 없습니다.\n이틀 전까지만 취소할 수 있습니다. 영상팀에 직접 문의해 주세요.`); return; }
+
+      const pin = prompt(`🚫 [${displayName(r)}] 의뢰를 취소하시겠습니까?\n취소하면 되돌릴 수 없고, 사용한 슬롯은 반환됩니다.\n\n관리자 PIN (4자리)을 입력하세요:`);
+      if (pin === null) return;
+      if (pin !== ADMIN_PIN) { alert("❌ 관리자 PIN 번호가 일치하지 않습니다."); return; }
+      const reason = prompt(`[${displayName(r)}] 취소 사유를 입력하세요:`, "");
+      if (reason === null) return;
+
+      closeDetailModal();
+      await sendWebhook({ action: "cancelRequest", row: r.row, project: r.project, applicant: r.applicant, reason: reason.trim() || "사유 미기재" },
+        "🚫 의뢰가 취소되었습니다. 영상팀에 취소 알림 메일이 발송됩니다.");
+    }
+
     // 🙈 직접 숨기기 / 다시 보이기 (관리자 PIN 필요, 시트 '웹 숨김' 열에 기록 → 모든 사람 화면에 반영)
     function setRequestHidden(idx, hide) {
       const r = gData.requests[idx];
@@ -1601,6 +1641,7 @@
               <button class="btn-action sec" style="flex:1; justify-content:center; font-size:11px;" onclick="event.stopPropagation(); openEditModal(${idx})">✏️ 일정/장소 변경</button>
             </div>
             ${hideBtnHtml}
+            ${cancelButtonHtml(r, idx, true)}
           </div>
         `;
       });
@@ -1666,6 +1707,7 @@
           <button class="btn-action pri" onclick="switchDetailTab('plan')">✨ 이 의뢰로 구성안 자동 제작</button>
           <button class="btn-action sec" onclick="closeDetailModal(); openEditModal(${idx})">✏️ 일정/장소 변경 및 기획안 업로드</button>
           <button class="btn-action sec" onclick="closeDetailModal(); jumpToRequestByIndex(${idx})">📍 전체 신청내역에서 위치 보기</button>
+          ${cancelButtonHtml(r, idx, false)}
         </div>
       `;
 

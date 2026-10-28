@@ -885,6 +885,14 @@
           <label>영상팀 예상 완료일</label>
           <input type="text" id="editTeamFinish" class="form-control" placeholder="예: 2026. 11. 05">
         </div>
+        <div>
+          <label>🎞️ 롱폼·스케치 제작 개수</label>
+          <input type="number" min="0" step="1" id="editLongCount" class="form-control" placeholder="없으면 0">
+        </div>
+        <div>
+          <label>🎞️ 숏폼 제작 개수</label>
+          <input type="number" min="0" step="1" id="editShortCount" class="form-control" placeholder="없으면 0">
+        </div>
       </div>
 
       <div class="edit-group-title">📅 일정 · 장소 <span style="font-weight:500; color:var(--text-muted);">— 촬영 일시·장소를 바꾸면 '재검토' 상태가 됩니다</span></div>
@@ -1165,11 +1173,14 @@
     const REQ_HEADER_RULES = [
       // [키, 판정 함수] — 위에서부터 먼저 맞는 규칙이 해당 열을 가져감
       ["hidden",      n => n.includes("숨김")],
+      // '영상 유형' 질문 제목/설명에 "숏폼·롱폼·개수"가 들어가도 유형 칸으로 인식되도록 '유형'이 있으면 먼저 유형으로
+      ["videoType",   n => n.includes("영상 유형") || n.includes("영상유형") || n.includes("유형")],
+      ["longCount",   n => n.includes("롱폼") && (n.includes("개수") || n.includes("수량"))],
+      ["shortCount",  n => n.includes("숏폼") && (n.includes("개수") || n.includes("수량"))],
       ["timestamp",   n => n.includes("타임스탬프")],
       ["dept",        n => n.includes("신청부서") || n.includes("신청 부서")],
       ["applicant",   n => n.includes("신청자")],
       ["project",     n => n.includes("프로젝트")],
-      ["videoType",   n => n.includes("영상 유형") || n.includes("영상유형")],
       ["urgent",      n => n.includes("급건")],
       ["deadLine",    n => n.includes("마감")],
       ["timeSlot",    n => n.includes("시간대")],
@@ -1255,6 +1266,8 @@
           scriptReq: txt(r, "scriptReq"),
           email: txt(r, "email"),
           workScope: txt(r, "workScope"),
+          longCount: txt(r, "longCount"),
+          shortCount: txt(r, "shortCount"),
           refLink: txt(r, "refLink"),
           manager: txt(r, "manager"),
           memo: txt(r, "memo"),
@@ -1271,6 +1284,19 @@
       renderTickets();
       renderCalendar();
     };
+
+    // 진행 범위(체크박스: "촬영", "편집", "촬영, 편집")
+    function isShootOnly(r) { const sc = String(r.workScope || ""); return (/촬영/.test(sc) && !/편집/.test(sc)) || /촬영만|촬영 만/.test(sc); }
+
+    // 🎞️ 제작 개수 표시: "롱폼 1 · 숏폼 2" (개수 칸이 없던 예전 신청은 빈 문자열)
+    function countsText(r) {
+      const parts = [];
+      const L = String(r.longCount || "").trim(), S = String(r.shortCount || "").trim();
+      if (L !== "" && Number(L) > 0) parts.push(`롱폼 ${Number(L)}`);
+      if (S !== "" && Number(S) > 0) parts.push(`숏폼 ${Number(S)}`);
+      if (!parts.length && (L !== "" || S !== "")) return "0개";
+      return parts.join(" · ");
+    }
 
     // 🔢 같은 프로젝트명이 여러 건이면 시트 순서대로 ①②③ 번호를 붙여 구분
     function numberDuplicateProjects() {
@@ -1334,7 +1360,7 @@
             </div>
             <div class="inbox-info-grid">
               <div>📅 <strong>촬영희망:</strong> ${esc(r.shootDate)} (${esc(r.timeSlot)})</div>
-              <div>📍 <strong>장소:</strong> ${esc(r.shootPlace)} | 🎬 <strong>유형:</strong> ${esc(r.videoType)}</div>
+              <div>📍 <strong>장소:</strong> ${esc(r.shootPlace)} | 🎬 <strong>유형:</strong> ${esc(r.videoType)}${countsText(r) ? ` | 🎞️ <strong>개수:</strong> ${esc(countsText(r))}` : ""}</div>
               <div>🎯 <strong>희망 마감:</strong> ${esc(r.deadLine)} | ⏱️ <strong>완료예정:</strong> <span style="color:#34D399;">${esc(r.teamFinish)}</span></div>
             </div>
             <button class="btn-action sec" style="width:100%; justify-content:center; font-size:12px; margin:6px 0;" onclick="event.stopPropagation(); openDetailModal(${r.idx})">🔍 의뢰 내용 확인 (기획 개요 · 소구점 · 레퍼런스)</button>
@@ -1406,7 +1432,9 @@
       ["editNewPlace",   "shootPlace", r => r.shootPlace],
       ["editRefLink",    "refLink",    r => r.refLink],
       ["editFileUrl",    "fileUpload", r => r.fileUpload],
-      ["editMemo",       "memo",       r => r.memo]
+      ["editMemo",       "memo",       r => r.memo],
+      ["editLongCount",  "longCount",  r => r.longCount],
+      ["editShortCount", "shortCount", r => r.shortCount]
     ];
     const cleanVal = v => { const t = String(v === null || v === undefined ? "" : v).trim(); return t === "-" ? "" : t; };
 
@@ -1455,7 +1483,7 @@
       const keys = Object.keys(changes);
       if (keys.length === 0) { alert("바뀐 내용이 없습니다."); return; }
 
-      const LABELS = { manager: "담당자", teamFinish: "예상 완료일", shootDate: "촬영 일시", deadLine: "희망 마감일", shootPlace: "촬영 장소", refLink: "레퍼런스 링크", fileUpload: "기획안 파일", memo: "비고" };
+      const LABELS = { longCount: "롱폼 개수", shortCount: "숏폼 개수", manager: "담당자", teamFinish: "예상 완료일", shootDate: "촬영 일시", deadLine: "희망 마감일", shootPlace: "촬영 장소", refLink: "레퍼런스 링크", fileUpload: "기획안 파일", memo: "비고" };
       const willReview = ("shootDate" in changes) || ("shootPlace" in changes);
       const cleared = keys.filter(k => changes[k] === "");
       if (cleared.length && !confirm(`다음 칸을 비웁니다: ${cleared.map(k => LABELS[k]).join(", ")}\n계속할까요?`)) return;
@@ -1666,6 +1694,7 @@
             <div class="ticket-proj" title="${esc(dupHint(r))}">${esc(displayName(r))} ${r.workScope ? `<span class="scope-chip">${esc(r.workScope)}</span>` : ''}</div>
             <div class="ticket-body">
               <div class="ticket-field"><span class="ticket-field-label">🎬 영상 유형</span><span class="ticket-field-val" style="color:var(--sc-cyan);">${esc(r.videoType)}</span></div>
+              ${countsText(r) ? `<div class="ticket-field"><span class="ticket-field-label">🎞️ 제작 개수</span><span class="ticket-field-val" style="color:#C4B5FD; font-weight:700;">${esc(countsText(r))}</span></div>` : ""}
               <div class="ticket-field"><span class="ticket-field-label">📅 촬영 일시</span><span class="ticket-field-val" style="color:#38BDF8;">${esc(r.shootDate)} (${esc(r.timeSlot)})</span></div>
               <div class="ticket-field"><span class="ticket-field-label">📍 촬영 장소</span><span class="ticket-field-val">${esc(r.shootPlace)}</span></div>
               <div class="ticket-field"><span class="ticket-field-label">🎯 희망 마감</span><span class="ticket-field-val" style="color:#FBBF24;">${esc(r.deadLine)}</span></div>
@@ -1712,6 +1741,7 @@
 
       const meta = [
         ["신청자", r.applicant], ["진행 범위", r.workScope || "-"], ["영상 유형", r.videoType],
+        ["🎞️ 제작 개수", countsText(r) || "미기재 (1개로 계산)"],
         ["촬영 일시", `${r.shootDate} (${r.timeSlot})`], ["촬영 장소", r.shootPlace], ["희망 마감", r.deadLine],
         ["영상팀 예상 완료", r.teamFinish], ["👤 담당자", r.manager || "미배정"], ["접수 상태", r.status],
         ["급건 슬롯", r.urgent || "-"], ["촬영 필요 여부", r.shootNeed || "-"], ["이메일", r.email || "-"]
@@ -1816,7 +1846,7 @@
       btn.disabled = true; btn.innerText = "⏳ AI와 연결 중입니다...";
       wrap.style.display = "block";
 
-      if (r) Object.assign(params, { videoType: r.videoType, workScope: r.workScope, cast: r.cast, place: r.shootPlace !== "-" ? r.shootPlace : "" });
+      if (r) Object.assign(params, { videoType: r.videoType, workScope: r.workScope, cast: r.cast, place: r.shootPlace !== "-" ? r.shootPlace : "", counts: countsText(r) });
       params.noCache = btn.dataset.generated === "1"; // [다시 제작하기]는 캐시 무시하고 새로 생성
       const ok = await runAiScript(params, { body: body, title: document.getElementById("apResultTitle"), retryFn: "runAutoPlanForRequest()" });
       if (ok) btn.dataset.generated = "1";
@@ -1891,7 +1921,7 @@
       grid.classList.add("edit-mode");
       const items = (gData.requests || []).map(r => {
         if (!r.status || r.status.includes("대기") || r.status.includes("반려")) return null;
-        if (/촬영만|촬영 만/.test(r.workScope || "")) return null;
+        if (isShootOnly(r)) return null;
         const es = getEditSchedule(r);
         return es ? Object.assign({ r: r }, es) : null;
       }).filter(Boolean);
@@ -1961,7 +1991,7 @@
         if (calendarMode === "shoot") {
           p = parseDateParts(r.shootDate);
         } else {
-          if (/촬영만|촬영 만/.test(r.workScope || "")) return null;
+          if (isShootOnly(r)) return null;
           const es = getEditSchedule(r);
           if (es) { p = es.parts; kind = es.kind; }
         }
@@ -2529,7 +2559,7 @@
               action: "generateAiScript",
               format: p.format, topic: p.topic, target: p.target || "", usp: p.usp || "", tone: p.tone,
               refUrl: p.refUrl || "", plan: p.plan || "",
-              videoType: p.videoType || "", workScope: p.workScope || "", cast: p.cast || "", place: p.place || "",
+              videoType: p.videoType || "", workScope: p.workScope || "", cast: p.cast || "", place: p.place || "", counts: p.counts || "",
               noCache: !!p.noCache
             })
           });

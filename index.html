@@ -1134,7 +1134,9 @@
       let adjClass = item.adj < 0 ? "stat-adj-badge minus" : "stat-adj-badge";
       if (bd) bd.innerHTML = `기본 <strong>${item.base}</strong> | 양도/조정 <span class="${adjClass}">${adjText}</span> | 사용 <strong>${item.used}</strong>`;
 
-      if (item.current <= 0) {
+      if (item.current < 0) {
+        card.classList.add("empty"); badge.className = "status-chip danger"; badge.innerText = `초과 ${Math.abs(item.current)}`;
+      } else if (item.current === 0) {
         card.classList.add("empty"); badge.className = "status-chip danger"; badge.innerText = "소진";
       } else {
         card.classList.remove("empty"); badge.className = "status-chip success"; badge.innerText = "여유";

@@ -868,6 +868,7 @@
       <input type="hidden" id="editRowNumber">
       <input type="hidden" id="editProjectRaw">
       <input type="hidden" id="editApplicantRaw">
+      <input type="hidden" id="editTsRaw">
 
       <div style="margin-bottom:10px;">
         <label style="font-size:11px; color:var(--text-muted);">프로젝트 명칭</label>
@@ -1222,6 +1223,18 @@
       return map;
     }
 
+    // 🛡️ 행 식별용 접수 시각 (분 단위, 예: "2026-10-23 16:04") — 시트 행이 밀려도 같은 의뢰를 찾기 위함
+    function tsKeyOf(cell) {
+      const v = cell && cell.v;
+      if (v === null || v === undefined) return "";
+      const m = String(v).match(/Date\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+),\s*(\d+))?/);
+      if (m) {
+        const p2 = n => String(n).padStart(2, "0");
+        return `${m[1]}-${p2(+m[2] + 1)}-${p2(m[3])} ${p2(m[4] || 0)}:${p2(m[5] || 0)}`;
+      }
+      return String(v).trim();
+    }
+
     window.onReqGviz = function(res) {
       if (!res || !res.table || !res.table.rows) return;
 
@@ -1250,6 +1263,7 @@
           idx: gData.requests.length,
           row: idx + 2,
           timestamp: time,
+          tsKey: tsKeyOf(cellAt(r, "timestamp")),
           dept: txt(r, "dept") || "-",
           applicant: txt(r, "applicant") || "-",
           project: txt(r, "project") || "-",
@@ -1390,7 +1404,7 @@
       renderTickets();
       renderCalendar();
 
-      sendWebhook({ action: "updateStatus", row: r.row, project: r.project, applicant: r.applicant, status: "✅ 정상 접수" }, "✅ 관리자 인증 완료: 촬영이 확정되었습니다!");
+      sendWebhook({ action: "updateStatus", row: r.row, project: r.project, applicant: r.applicant, ts: r.tsKey, status: "✅ 정상 접수" }, "✅ 관리자 인증 완료: 촬영이 확정되었습니다!");
     }
 
     // ── 🔒 반려 (PIN 9909 필수 + 연쇄 삭제 버그 방지) ──
@@ -1411,6 +1425,7 @@
       const targetRow = r.row;
       const targetProj = r.project;
       const targetApplicant = r.applicant;
+      const targetTs = r.tsKey;
 
       // 화면 목록에서 즉각 제거
       gData.requests.splice(reqIndex, 1);
@@ -1418,7 +1433,7 @@
       renderTickets();
       renderCalendar();
 
-      sendWebhook({ action: "rejectRequest", row: targetRow, project: targetProj, applicant: targetApplicant, reason: reason }, "⛔ 관리자 인증 완료: 해당 의뢰가 반려되었습니다.");
+      sendWebhook({ action: "rejectRequest", row: targetRow, project: targetProj, applicant: targetApplicant, ts: targetTs, reason: reason }, "⛔ 관리자 인증 완료: 해당 의뢰가 반려되었습니다.");
     }
 
     // ✏️ 의뢰 정보 수정 — 열 때의 값(원래 값)을 기억해 두고, 바뀐 칸만 시트에 보냄
@@ -1444,6 +1459,7 @@
       document.getElementById("editRowNumber").value = r.row;
       document.getElementById("editProjectRaw").value = r.project;
       document.getElementById("editApplicantRaw").value = r.applicant;
+      document.getElementById("editTsRaw").value = r.tsKey || "";
       document.getElementById("editProjectTitle").value = `[${r.dept}] ${displayName(r)}`;
 
       editOriginal = {};
@@ -1494,6 +1510,7 @@
         row: document.getElementById("editRowNumber").value,
         project: document.getElementById("editProjectRaw").value,
         applicant: document.getElementById("editApplicantRaw").value,
+        ts: document.getElementById("editTsRaw").value,
         changes: JSON.stringify(changes)
       }, `✅ 시트에 반영되었습니다: ${keys.map(k => LABELS[k]).join(", ")}` + (willReview ? "\n(촬영 일시·장소가 바뀌어 '재검토' 상태로 변경됩니다)" : ""));
     }
@@ -1584,7 +1601,7 @@
       if (reason === null) return;
 
       closeDetailModal();
-      await sendWebhook({ action: "cancelRequest", row: r.row, project: r.project, applicant: r.applicant, reason: reason.trim() || "사유 미기재" },
+      await sendWebhook({ action: "cancelRequest", row: r.row, project: r.project, applicant: r.applicant, ts: r.tsKey, reason: reason.trim() || "사유 미기재" },
         "🚫 의뢰가 취소되었습니다. 영상팀에 취소 알림 메일이 발송됩니다.");
     }
 
@@ -1600,7 +1617,7 @@
       const badge = document.getElementById("reqBadge");
       if (badge) badge.innerText = gData.requests.filter(x => !isHiddenFromList(x)).length;
       renderTickets();
-      sendWebhook({ action: "setHidden", row: r.row, project: r.project, applicant: r.applicant, hidden: hide ? "1" : "0" },
+      sendWebhook({ action: "setHidden", row: r.row, project: r.project, applicant: r.applicant, ts: r.tsKey, hidden: hide ? "1" : "0" },
         hide ? "🙈 전체 신청내역에서 숨겼습니다. ([숨긴 항목 보기]에서 다시 볼 수 있습니다)" : "👁️ 다시 보이도록 변경했습니다.");
     }
 
@@ -1638,7 +1655,7 @@
       const hiddenCount = pastCount + manualCount;
       const activeCount = gData.requests.length - hiddenCount;
       const info = document.getElementById("reqToolbarInfo");
-      if (info) info.innerHTML = `진행 중 <strong>${activeCount}건</strong> · 숨긴 항목 <strong>${hiddenCount}건</strong> (지난 촬영 ${pastCount} · 직접 숨김 ${manualCount})${showPastRequests ? " 표시 중" : ""} · 카드를 누르면 상세 내용을 볼 수 있습니다 · 롱폼 및 숏폼 수량을 모두 0으로 표기하시면 제작물 수량 확인이 어려워 제작에 들어가지 않습니다. `;
+      if (info) info.innerHTML = `진행 중 <strong>${activeCount}건</strong> · 숨긴 항목 <strong>${hiddenCount}건</strong> (지난 촬영 ${pastCount} · 직접 숨김 ${manualCount})${showPastRequests ? " 표시 중" : ""} · 카드를 누르면 상세 내용을 볼 수 있습니다`;
       const tgl = document.getElementById("btnPastToggle");
       if (tgl) {
         tgl.classList.toggle("on", showPastRequests);

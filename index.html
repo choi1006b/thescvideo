@@ -1088,12 +1088,13 @@
     }
 
     // ── 💡 스프레드시트 데이터 안전 호출 함수 (에러 완벽 방어) ──
-    function fetchGviz(sheetName, callbackName) {
+    // headerRows: 1을 주면 '1행 = 제목줄'로 강제 (모든 칸이 글자인 탭은 구글이 제목줄을 못 알아보기 때문)
+    function fetchGviz(sheetName, callbackName, headerRows) {
       const old = document.getElementById("gviz_" + callbackName);
       if (old) old.remove();
       const s = document.createElement("script");
       s.id = "gviz_" + callbackName;
-      s.src = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/gviz/tq?sheet=" + encodeURIComponent(sheetName) + "&tqx=responseHandler:" + callbackName + "&t=" + Date.now();
+      s.src = "https://docs.google.com/spreadsheets/d/" + SPREADSHEET_ID + "/gviz/tq?sheet=" + encodeURIComponent(sheetName) + (headerRows ? "&headers=" + headerRows : "") + "&tqx=responseHandler:" + callbackName + "&t=" + Date.now();
       document.body.appendChild(s);
     }
 
@@ -1108,8 +1109,8 @@
       fetchGviz("양도내역", "onTransferGviz");
       fetchGviz("포트폴리오", "onPortfolioGviz");
       fetchGviz("🔥실시간트렌드", "onCrawledTrendGviz");
-      fetchGviz("📢공지사항", "onNoticeGviz");
-      fetchGviz("🌴휴가", "onVacationGviz");
+      fetchGviz("📢공지사항", "onNoticeGviz", 1);
+      fetchGviz("🌴휴가", "onVacationGviz", 1);
     }
 
     // ── 📺 현황판 ──

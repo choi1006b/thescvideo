@@ -163,6 +163,37 @@
     .edit-grid .full { grid-column: 1 / -1; }
     .edit-grid label, .edit-label { font-size: 11px; color: var(--text-muted); }
     @media (max-width: 600px) { .edit-grid { grid-template-columns: 1fr; } }
+    /* 📢 공지사항 */
+    .cal-info-row { display: flex; gap: 12px; align-items: stretch; margin-bottom: 12px; }
+    .cal-info-row > div { margin-bottom: 0 !important; }
+    .cal-info-row .notice-board { flex: 2; min-width: 0; }
+    .vacation-box { flex: 1; min-width: 220px; max-width: 380px; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; }
+    .vac-item { display: flex; align-items: baseline; gap: 8px; padding: 4px 2px; font-size: 12.5px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .vac-item:first-of-type { border-top: none; }
+    .vac-name { font-weight: 700; color: #fff; white-space: nowrap; }
+    .vac-date { color: #7DD3FC; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; white-space: nowrap; }
+    .vac-kind { font-size: 10.5px; padding: 0 6px; border-radius: 999px; background: rgba(16,185,129,0.15); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.35); white-space: nowrap; }
+    .vac-kind.half { background: rgba(245,158,11,0.15); color: #FCD34D; border-color: rgba(245,158,11,0.35); }
+    .vac-memo { color: var(--text-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .vac-empty { color: var(--text-muted); font-size: 12px; padding: 4px 2px; }
+    @media (max-width: 768px) { .cal-info-row { flex-direction: column; } .vacation-box { max-width: none; } }
+    .notice-board { background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 12px; }
+    .notice-board-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .notice-board-title { font-size: 13px; font-weight: 700; color: #fff; }
+    .notice-item { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-top: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 12.5px; }
+    .notice-item:first-of-type { border-top: none; }
+    .notice-item:hover { background: rgba(255,255,255,0.03); }
+    .notice-item .n-title { flex: 1; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .notice-item .n-date { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+    .notice-chip { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: var(--radius-full); white-space: nowrap; }
+    .notice-chip.n-notice { background: rgba(0,163,224,0.18); color: #7DD3FC; border: 1px solid rgba(0,163,224,0.4); }
+    .notice-chip.n-update { background: rgba(16,185,129,0.15); color: #6EE7B7; border: 1px solid rgba(16,185,129,0.4); }
+    .notice-chip.n-warn { background: rgba(245,158,11,0.18); color: #FCD34D; border: 1px solid rgba(245,158,11,0.45); }
+    .notice-chip.n-urgent { background: rgba(239,68,68,0.18); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.45); }
+    .notice-body { font-size: 13px; line-height: 1.75; color: var(--text-primary); white-space: pre-wrap; word-break: break-word; }
+    .notice-body a { color: #38BDF8; text-decoration: underline; }
+    .notice-pop-item { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; background: rgba(0,0,0,0.2); }
+    .notice-pop-item h4 { font-size: 14px; color: #fff; margin: 6px 0 8px; }
     .cal-mode-tabs { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
     .cal-mode-btn { background: var(--sc-surface); border: 1px solid var(--border-subtle); color: var(--text-secondary); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 700; cursor: pointer; }
     .cal-mode-btn.active { background: var(--sc-surface-elevated); color: #fff; border-color: rgba(0, 163, 224, 0.5); box-shadow: 0 0 0 1px rgba(0, 163, 224, 0.25) inset; }
@@ -491,6 +522,21 @@
 
   <!-- ── TAB 1: 📅 스케쥴 캘린더 ── -->
   <section class="view-content active" id="view-calendar">
+    <div class="cal-info-row" id="calInfoRow">
+    <div class="notice-board" id="noticeBoard" style="display:none;">
+      <div class="notice-board-head">
+        <span class="notice-board-title">📢 공지 · 업데이트</span>
+        <button class="btn-action sec" style="padding:3px 10px; font-size:11px;" onclick="openNoticeList()">전체 보기</button>
+      </div>
+      <div id="noticeBoardList"></div>
+    </div>
+    <div class="vacation-box" id="vacationBox" style="display:none;">
+      <div class="notice-board-head">
+        <span class="notice-board-title" id="vacationTitle">🌴 휴가자</span>
+      </div>
+      <div id="vacationList"></div>
+    </div>
+    </div>
     <div class="cal-mode-tabs">
       <button class="cal-mode-btn active" id="calModeShoot" onclick="switchCalendarMode('shoot')">🎥 촬영 일정</button>
       <button class="cal-mode-btn" id="calModeEdit" onclick="switchCalendarMode('edit')">✂️ 편집 일정</button>
@@ -792,6 +838,18 @@
   </div>
 
   <!-- ── 팝업 모달 4: ✏️ 의뢰 일정/장소 및 기획안 파일 수정 모달 ── -->
+  <!-- ── 팝업 모달: 📢 공지사항 ── -->
+  <div class="modal-backdrop" id="noticeModal" onclick="if (event.target === this) closeNoticeModal()">
+    <div class="modal-dialog" style="max-width:560px; max-height:86vh; overflow-y:auto;">
+      <div class="modal-top-bar">
+        <div class="modal-title" id="noticeModalTitle">📢 공지사항</div>
+        <button class="modal-close-btn" onclick="closeNoticeModal()">✕</button>
+      </div>
+      <div id="noticeModalBody"></div>
+      <div id="noticeModalActions" style="display:flex; gap:8px; margin-top:6px;"></div>
+    </div>
+  </div>
+
   <!-- ── 팝업 모달: 📋 신청 상세 + ✨ 자동 구성안 ── -->
   <div class="modal-backdrop" id="detailModal" onclick="if (event.target === this) closeDetailModal()">
     <div class="modal-dialog detail">
@@ -1050,6 +1108,8 @@
       fetchGviz("양도내역", "onTransferGviz");
       fetchGviz("포트폴리오", "onPortfolioGviz");
       fetchGviz("🔥실시간트렌드", "onCrawledTrendGviz");
+      fetchGviz("📢공지사항", "onNoticeGviz");
+      fetchGviz("🌴휴가", "onVacationGviz");
     }
 
     // ── 📺 현황판 ──
@@ -2114,6 +2174,7 @@
       document.getElementById("btnCurrentMonth").classList.toggle("active", mode === "current");
       document.getElementById("btnNextMonth").classList.toggle("active", mode === "next");
       renderCalendar();
+      if (typeof renderVacations === "function") renderVacations();
     }
 
     window.onRejGviz = function(res) {
@@ -2683,6 +2744,158 @@
     function copyAiScript() {
       if (!lastGeneratedScript) { alert("먼저 기획안을 생성해 주세요!"); return; }
       navigator.clipboard.writeText(lastGeneratedScript).then(() => alert("✅ 세부 연출 큐시트 전체가 클립보드에 복사되었습니다!"));
+    }
+
+    // ── 📢 공지사항: 시트 [📢공지사항] 탭 (게시일 | 구분 | 제목 | 내용 | 팝업 | 종료일) ──
+    let noticePopupShown = false;
+    gData.notices = [];
+
+    function noticeKind(t) {
+      t = String(t || "");
+      if (/긴급|중요/.test(t)) return { cls: "n-urgent", label: t || "긴급" };
+      if (/주의/.test(t)) return { cls: "n-warn", label: t };
+      if (/업데이트|변경|기능/.test(t)) return { cls: "n-update", label: t };
+      return { cls: "n-notice", label: t || "공지" };
+    }
+    function noticeId(n) { return "notice:" + (n.date + "|" + n.title).replace(/\s+/g, ""); }
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    function todayYmd() { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
+
+    window.onNoticeGviz = function(res) {
+      if (!res || !res.table || !res.table.rows) { gData.notices = []; renderNoticeBoard(); return; } // 탭이 없으면 조용히 숨김
+      const cols = (res.table.cols || []).map(c => String((c && c.label) || "").trim());
+      // ※ 탭이 없으면 구글이 첫 번째 탭(스케쥴 캘린더)을 대신 돌려주므로, '제목' 칸이 없으면 공지 탭이 아닌 것으로 판단
+      if (!cols.some(l => l.includes("제목"))) { gData.notices = []; renderNoticeBoard(); return; }
+      const find = (words, fb) => { const i = cols.findIndex(l => words.some(w => l.includes(w))); return i >= 0 ? i : fb; };
+      const ci = { date: find(["게시일", "날짜"], 0), type: find(["구분", "분류"], 1), title: find(["제목"], 2), body: find(["내용", "본문"], 3), popup: find(["팝업"], 4), end: find(["종료", "마감"], 5) };
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+
+      gData.notices = res.table.rows.map(r => {
+        const c = r.c || [];
+        const title = String(cellVal(c[ci.title]) || "").trim();
+        if (!title) return null;
+        const endParts = parseDateParts(formatAnyDate(c[ci.end]));
+        if (endParts && dateFromParts(endParts) < today) return null; // 종료일 지난 공지는 숨김
+        const dateStr = formatAnyDate(c[ci.date]);
+        const dp = parseDateParts(dateStr);
+        return {
+          date: dateStr === "-" ? "" : dateStr,
+          sortKey: dp ? dateFromParts(dp).getTime() : 0,
+          type: String(cellVal(c[ci.type]) || "").trim(),
+          title: title,
+          body: String(cellVal(c[ci.body]) || "").trim(),
+          popup: /^(y|yes|o|예|네|팝업|true|✔|✅)/i.test(String(cellVal(c[ci.popup]) || "").trim()) || cellVal(c[ci.popup]) === true
+        };
+      }).filter(Boolean).sort((a, b) => b.sortKey - a.sortKey);
+
+      renderNoticeBoard();
+      if (!noticePopupShown) { noticePopupShown = true; showNoticePopup(); }
+    };
+
+    function renderNoticeBoard() {
+      const board = document.getElementById("noticeBoard");
+      const list = document.getElementById("noticeBoardList");
+      if (!board || !list) return;
+      if (!gData.notices.length) { board.style.display = "none"; return; }
+      board.style.display = "block";
+      list.innerHTML = gData.notices.slice(0, 3).map((n, i) => {
+        const k = noticeKind(n.type);
+        return `<div class="notice-item" onclick="openNotice(${i})"><span class="notice-chip ${k.cls}">${esc(k.label)}</span><span class="n-title">${esc(n.title)}</span><span class="n-date">${esc(n.date)}</span></div>`;
+      }).join("");
+    }
+
+    function noticeHtml(n) {
+      const k = noticeKind(n.type);
+      return `<div class="notice-pop-item"><span class="notice-chip ${k.cls}">${esc(k.label)}</span> <span class="n-date" style="font-size:11px; color:var(--text-muted);">${esc(n.date)}</span><h4>${esc(n.title)}</h4><div class="notice-body">${linkify(n.body || "")}</div></div>`;
+    }
+
+    function openNotice(i) {
+      const n = gData.notices[i];
+      if (!n) return;
+      document.getElementById("noticeModalTitle").innerText = "📢 공지사항";
+      document.getElementById("noticeModalBody").innerHTML = noticeHtml(n);
+      document.getElementById("noticeModalActions").innerHTML = `<button class="btn-action pri" style="flex:1; justify-content:center;" onclick="closeNoticeModal()">확인</button>`;
+      document.getElementById("noticeModal").classList.add("active");
+    }
+
+    function openNoticeList() {
+      document.getElementById("noticeModalTitle").innerText = `📢 전체 공지 (${gData.notices.length})`;
+      document.getElementById("noticeModalBody").innerHTML = gData.notices.map(noticeHtml).join("") || '<div style="color:var(--text-muted);">공지가 없습니다.</div>';
+      document.getElementById("noticeModalActions").innerHTML = `<button class="btn-action pri" style="flex:1; justify-content:center;" onclick="closeNoticeModal()">닫기</button>`;
+      document.getElementById("noticeModal").classList.add("active");
+    }
+
+    // 페이지를 열 때 '팝업'으로 표시된 공지를 띄움 — [오늘 하루 보지 않기] 누르면 그날은 다시 안 뜸
+    function showNoticePopup() {
+      const pops = gData.notices.filter(n => n.popup && lsGet(noticeId(n)) !== todayYmd());
+      if (!pops.length) return;
+      document.getElementById("noticeModalTitle").innerText = "📢 공지사항";
+      document.getElementById("noticeModalBody").innerHTML = pops.map(noticeHtml).join("");
+      window.__popNoticeIds = pops.map(noticeId);
+      document.getElementById("noticeModalActions").innerHTML = `
+        <button class="btn-action sec" style="flex:1; justify-content:center;" onclick="hideNoticesToday()">오늘 하루 보지 않기</button>
+        <button class="btn-action pri" style="flex:1; justify-content:center;" onclick="closeNoticeModal()">확인</button>`;
+      document.getElementById("noticeModal").classList.add("active");
+    }
+    function hideNoticesToday() {
+      (window.__popNoticeIds || []).forEach(id => lsSet(id, todayYmd()));
+      closeNoticeModal();
+    }
+    function closeNoticeModal() { document.getElementById("noticeModal").classList.remove("active"); }
+
+    // ── 🌴 휴가자: 시트 [🌴휴가] 탭 (이름 | 시작일 | 종료일 | 구분 | 비고) ──
+    //    캘린더에서 보고 있는 달(당월/익월)에 걸치는 휴가만 작게 표시
+    gData.vacations = null; // null = 탭 없음
+
+    window.onVacationGviz = function(res) {
+      const cols = (res && res.table && res.table.cols || []).map(c => String((c && c.label) || "").trim());
+      // 탭이 없으면 구글이 첫 번째 탭을 대신 돌려주므로 '이름' 칸이 없으면 휴가 탭이 아닌 것으로 판단
+      if (!res || !res.table || !cols.some(l => l.includes("이름"))) { gData.vacations = null; renderVacations(); return; }
+      const find = (words, fb) => { const i = cols.findIndex(l => words.some(w => l.includes(w))); return i >= 0 ? i : fb; };
+      const ci = { name: find(["이름"], 0), start: find(["시작"], 1), end: find(["종료", "끝"], 2), kind: find(["구분", "종류"], 3), memo: find(["비고", "메모"], 4) };
+      gData.vacations = (res.table.rows || []).map(r => {
+        const c = r.c || [];
+        const name = String(cellVal(c[ci.name]) || "").trim();
+        const sp = parseDateParts(formatAnyDate(c[ci.start]));
+        if (!name || !sp) return null;
+        const ep = parseDateParts(formatAnyDate(c[ci.end])) || sp;
+        const start = dateFromParts(sp), end = dateFromParts(ep);
+        return { name, start, end: end < start ? start : end, kind: String(cellVal(c[ci.kind]) || "").trim(), memo: String(cellVal(c[ci.memo]) || "").trim() };
+      }).filter(Boolean).sort((a, b) => a.start - b.start || a.name.localeCompare(b.name));
+      renderVacations();
+    };
+
+    function renderVacations() {
+      const box = document.getElementById("vacationBox");
+      const list = document.getElementById("vacationList");
+      if (!box || !list) return;
+      if (gData.vacations === null) { box.style.display = "none"; return; }
+      box.style.display = "block";
+
+      const y = (activeMonthMode === "current") ? curYear : nextYear;
+      const m = (activeMonthMode === "current") ? curMonth : nextMonth;
+      const mStart = new Date(y, m - 1, 1), mEnd = new Date(y, m, 0);
+      document.getElementById("vacationTitle").innerText = `🌴 ${m}월 휴가자`;
+
+      const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+      const fmt = d => `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`;
+      const items = gData.vacations.filter(v => v.start <= mEnd && v.end >= mStart);
+      if (!items.length) { list.innerHTML = `<div class="vac-empty">이번 달 등록된 휴가가 없습니다.</div>`; return; }
+
+      list.innerHTML = items.map(v => {
+        const same = v.start.getTime() === v.end.getTime();
+        const days = Math.round((v.end - v.start) / 86400000) + 1;
+        const range = same ? fmt(v.start) : `${fmt(v.start)}~${fmt(v.end)}`;
+        const half = /반차|반반차/.test(v.kind);
+        const kindLabel = v.kind || (same ? "휴가" : `${days}일`);
+        return `<div class="vac-item" title="${esc(v.name + " · " + range + (v.kind ? " · " + v.kind : "") + (v.memo ? " · " + v.memo : ""))}">
+          <span class="vac-name">${esc(v.name)}</span>
+          <span class="vac-date">${esc(range)}</span>
+          <span class="vac-kind${half ? " half" : ""}">${esc(kindLabel)}</span>
+          ${v.memo ? `<span class="vac-memo">${esc(v.memo)}</span>` : ""}
+        </div>`;
+      }).join("");
     }
 
     // ── 🔄 자동 동기화: 3분마다 시트 다시 읽기 ──

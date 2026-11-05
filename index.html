@@ -418,6 +418,16 @@
     .req-toolbar-info { font-size: 12px; color: var(--text-secondary); }
     .req-toolbar-info strong { color: #fff; }
     .btn-past-toggle { font-size: 12px; }
+    .req-filter-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--sc-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px; }
+    .req-search { flex: 1 1 260px; margin-top: 0 !important; }
+    .req-quick { display: flex; flex-wrap: wrap; gap: 4px; }
+    .req-quick button { background: rgba(255,255,255,0.05); border: 1px solid var(--border-subtle); color: var(--text-secondary); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .req-quick button.active { background: rgba(0,163,224,0.18); border-color: rgba(0,163,224,0.5); color: #7DD3FC; }
+    .req-quick button .cnt { opacity: 0.7; margin-left: 3px; font-weight: 500; }
+    .req-selects { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .req-selects .form-control { width: auto; min-width: 120px; margin-top: 0; padding: 7px 10px; font-size: 12px; }
+    .req-filter-empty { color: var(--text-muted); padding: 30px; grid-column: 1 / -1; text-align: center; }
+    @media (max-width: 700px) { .req-selects .form-control { flex: 1 1 45%; min-width: 0; } }
     .btn-past-toggle.on { background: rgba(0, 163, 224, 0.15); border-color: rgba(0, 163, 224, 0.45); color: #7DD3FC; }
     .ticket-card { cursor: pointer; }
     .ticket-card:hover { border-color: rgba(0, 163, 224, 0.35); }
@@ -621,6 +631,22 @@
     <div class="req-toolbar">
       <div class="req-toolbar-info" id="reqToolbarInfo">신청 내역을 불러오는 중...</div>
       <button class="btn-action sec btn-past-toggle" id="btnPastToggle" onclick="togglePastRequests()">🗂️ 숨긴 항목 보기</button>
+    </div>
+    <div class="req-filter-bar">
+      <input type="search" id="reqSearch" class="form-control req-search" placeholder="🔍 검색 (프로젝트·신청자·담당자·장소·기획 내용…)" oninput="setReqFilter('q', this.value)">
+      <div class="req-quick" id="reqQuick"></div>
+      <div class="req-selects">
+        <select id="reqDept" class="form-control" onchange="setReqFilter('dept', this.value)"></select>
+        <select id="reqType" class="form-control" onchange="setReqFilter('type', this.value)"></select>
+        <select id="reqManager" class="form-control" onchange="setReqFilter('manager', this.value)"></select>
+        <select id="reqSort" class="form-control" onchange="setReqFilter('sort', this.value)">
+          <option value="date">정렬: 일정 가까운 순</option>
+          <option value="recent">정렬: 접수 최신순</option>
+          <option value="deadline">정렬: 마감 임박순</option>
+          <option value="sheet">정렬: 시트 순서</option>
+        </select>
+        <button class="btn-action sec" style="font-size:12px;" onclick="resetReqFilter()">초기화</button>
+      </div>
     </div>
     <div class="tickets-grid" id="reqTicketsGrid"></div>
   </section>
@@ -1720,6 +1746,88 @@
       return Array.from(new Set((String(text || "").match(URL_RE) || []).map(trimUrl)));
     }
 
+    // ── 🔍 전체 신청내역 검색 · 분류 ──
+    const REQ_FILTER_DEFAULT = { q: "", quick: "all", dept: "", type: "", manager: "", sort: "date" };
+    let reqFilter = Object.assign({}, REQ_FILTER_DEFAULT);
+    try { Object.assign(reqFilter, JSON.parse(localStorage.getItem("reqFilter") || "{}"), { q: "" }); } catch (e) {}
+
+    function setReqFilter(key, val) {
+      reqFilter[key] = val;
+      try { const keep = Object.assign({}, reqFilter, { q: "" }); localStorage.setItem("reqFilter", JSON.stringify(keep)); } catch (e) {}
+      renderTickets();
+    }
+    function resetReqFilter() {
+      reqFilter = Object.assign({}, REQ_FILTER_DEFAULT);
+      const si = document.getElementById("reqSearch"); if (si) si.value = "";
+      try { localStorage.removeItem("reqFilter"); } catch (e) {}
+      renderTickets();
+    }
+    function managersOf(r) { return String(r.manager || "").split(/[,，\/]/).map(n => n.trim()).filter(Boolean); }
+    function scheduleDateOf(r) { return dateFromParts(parseDateParts(r.shootDate) || parseDateParts(r.deadLine)); }
+    function isThisWeek(d) {
+      if (!d) return false;
+      const t = new Date(); t.setHours(0, 0, 0, 0);
+      const mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7));
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+      return d >= mon && d <= sun;
+    }
+    const QUICK_VIEWS = [
+      ["all",       "전체",          () => true],
+      ["week",      "이번 주 일정",   r => isThisWeek(scheduleDateOf(r))],
+      ["unassigned","담당자 미배정",  r => managersOf(r).length === 0],
+      ["pending",   "승인 대기",      r => /대기|변경/.test(r.status)],
+      ["nodate",    "일정 없음",      r => !scheduleDateOf(r)]
+    ];
+    function searchText(r) {
+      return [r.project, displayName(r), r.applicant, r.dept, r.manager, r.shootPlace, r.videoType, r.workScope, r.plan, r.scriptReq, r.memo, r.status]
+        .join(" ").toLowerCase();
+    }
+    function fillSelect(id, label, values, current) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.innerHTML = `<option value="">${label}: 전체</option>` + values.map(([v, n]) => `<option value="${esc(v)}"${v === current ? " selected" : ""}>${esc(v)} (${n})</option>`).join("");
+      if (current && !values.some(([v]) => v === current)) el.innerHTML += `<option value="${esc(current)}" selected>${esc(current)} (0)</option>`;
+    }
+    function countBy(list, keyFn) {
+      const m = new Map();
+      list.forEach(r => [].concat(keyFn(r)).forEach(k => { if (k) m.set(k, (m.get(k) || 0) + 1); }));
+      return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    }
+    function applyReqFilters(list) {
+      const q = String(reqFilter.q || "").trim().toLowerCase();
+      const quick = (QUICK_VIEWS.find(v => v[0] === reqFilter.quick) || QUICK_VIEWS[0])[2];
+      return list.filter(r =>
+        quick(r) &&
+        (!reqFilter.dept || r.dept === reqFilter.dept) &&
+        (!reqFilter.type || r.videoType === reqFilter.type) &&
+        (!reqFilter.manager || (reqFilter.manager === "미배정" ? managersOf(r).length === 0 : managersOf(r).includes(reqFilter.manager))) &&
+        (!q || q.split(/\s+/).every(w => searchText(r).includes(w)))
+      );
+    }
+    function sortReqs(list) {
+      const far = 8.64e15;
+      const t = d => d ? d.getTime() : far;
+      const tsOf = r => { const m = String(r.tsKey || "").match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]).getTime() : 0; };
+      const arr = list.slice();
+      if (reqFilter.sort === "date") arr.sort((a, b) => t(scheduleDateOf(a)) - t(scheduleDateOf(b)) || a.row - b.row);
+      else if (reqFilter.sort === "recent") arr.sort((a, b) => tsOf(b) - tsOf(a) || b.row - a.row);
+      else if (reqFilter.sort === "deadline") arr.sort((a, b) => t(dateFromParts(parseDateParts(a.deadLine))) - t(dateFromParts(parseDateParts(b.deadLine))) || a.row - b.row);
+      else arr.sort((a, b) => a.row - b.row);
+      return arr;
+    }
+    function renderReqFilterBar(base) {
+      const quickEl = document.getElementById("reqQuick");
+      if (quickEl) quickEl.innerHTML = QUICK_VIEWS.map(([k, label, fn]) =>
+        `<button class="${reqFilter.quick === k ? "active" : ""}" onclick="setReqFilter('quick','${k}')">${label}<span class="cnt">${base.filter(fn).length}</span></button>`).join("");
+      fillSelect("reqDept", "부서", countBy(base, r => r.dept), reqFilter.dept);
+      fillSelect("reqType", "유형", countBy(base, r => r.videoType), reqFilter.type);
+      const mgr = countBy(base, r => managersOf(r));
+      const unassigned = base.filter(r => managersOf(r).length === 0).length;
+      fillSelect("reqManager", "담당자", (unassigned ? [["미배정", unassigned]] : []).concat(mgr), reqFilter.manager);
+      const sortEl = document.getElementById("reqSort"); if (sortEl) sortEl.value = reqFilter.sort;
+      const si = document.getElementById("reqSearch"); if (si && si.value !== reqFilter.q) si.value = reqFilter.q;
+    }
+
     function renderTickets() {
       const grid = document.getElementById("reqTicketsGrid");
       if (!grid) return;
@@ -1742,9 +1850,17 @@
         return;
       }
 
-      const visible = gData.requests.filter(r => showPastRequests || !isHiddenFromList(r));
+      // 검색어가 있으면 숨긴 항목(지난 일정 포함)까지 모두 찾음
+      const searching = String(reqFilter.q || "").trim() !== "";
+      const base = gData.requests.filter(r => showPastRequests || searching || !isHiddenFromList(r));
+      renderReqFilterBar(base);
+      const visible = sortReqs(applyReqFilters(base));
+      const filtered = searching || reqFilter.quick !== "all" || reqFilter.dept || reqFilter.type || reqFilter.manager;
+      if (info && filtered) info.innerHTML += ` · <strong style="color:#7DD3FC;">조건에 맞는 ${visible.length}건</strong>${searching ? " (숨긴 항목 포함 검색)" : ""}`;
       if (visible.length === 0) {
-        grid.innerHTML = '<div style="color:var(--text-muted); padding:30px;">진행 중인 신청 건이 없습니다. 위의 [숨긴 항목 보기]를 누르면 숨긴 건을 볼 수 있습니다.</div>';
+        grid.innerHTML = filtered
+          ? '<div class="req-filter-empty">조건에 맞는 신청 건이 없습니다. <button class="btn-action sec" style="margin-left:6px;" onclick="resetReqFilter()">필터 초기화</button></div>'
+          : '<div style="color:var(--text-muted); padding:30px;">진행 중인 신청 건이 없습니다. 위의 [숨긴 항목 보기]를 누르면 숨긴 건을 볼 수 있습니다.</div>';
         return;
       }
 
@@ -2153,6 +2269,7 @@
     function jumpToRequestByIndex(idx) {
       // 캘린더에서 지난 일정을 누르면 숨김을 풀고 이동
       if (!showPastRequests && isHiddenFromList(gData.requests[idx])) togglePastRequests(true);
+      if (!applyReqFilters([gData.requests[idx]]).length) resetReqFilter(); // 필터에 가려져 있으면 필터 해제
       switchTab('requests');
       setTimeout(() => {
         const card = document.getElementById("req-card-" + idx);

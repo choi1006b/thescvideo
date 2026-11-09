@@ -3006,7 +3006,7 @@
       const y = (activeMonthMode === "current") ? curYear : nextYear;
       const m = (activeMonthMode === "current") ? curMonth : nextMonth;
       const mStart = new Date(y, m - 1, 1), mEnd = new Date(y, m, 0);
-      document.getElementById("vacationTitle").innerText = `🌴 ${m}월 휴가자`;
+      document.getElementById("vacationTitle").innerText = `🌴 ${m}월 휴가 및 자리비움`;
 
       const DOW = ["일", "월", "화", "수", "목", "금", "토"];
       const fmt = d => `${d.getMonth() + 1}/${d.getDate()}(${DOW[d.getDay()]})`;
